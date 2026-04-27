@@ -119,8 +119,6 @@ rpm==4.20.1
 s3transfer==0.16.0
 schedule==1.2.1
 selenium==4.41.0
-selinux @ file:///builddir/build/BUILD/libselinux-3.8-build/libselinux-3.8/src
-sepolicy @ file:///builddir/build/BUILD/policycoreutils-3.8-build/selinux-3.8/python/sepolicy
 setools==4.6.0
 setuptools==74.1.3
 simpleaudio==1.0.4
