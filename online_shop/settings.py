@@ -139,26 +139,23 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 
 
-# Email Settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'santhoshkumarv09042005@gmail.com'     # <-- Your Gmail
-EMAIL_HOST_PASSWORD ='nodp mlvd jqxu frkp'    # <-- Your Gmail App Password
-DEFAULT_FROM_EMAIL = 'santhoshkumarv09042005@gmail.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
+EMAIL_HOST = 'smtp.gmail.com' 
+EMAIL_PORT = 587 
+EMAIL_USE_TLS = True 
+# <-- Your Gmail 
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD =os.getenv('EMAIL_HOST_PASSWORD') 
+DEFAULT_FROM_EMAIL = 'santhoshkumarv09042005@gmail.com' # Payment 
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID') 
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET') # உன் secret போடு # Shipping 
+FREE_SHIPPING_THRESHOLD = 500 # ₹500 above = free shipping 
+SHIPPING_CHARGE = 49 # below ₹500 = ₹49 # Returns
+RETURN_WINDOW_DAYS = 7 # 7 days return window # Twilio Settings 
 
-# Payment
-RAZORPAY_KEY_ID = 'rzp_test_SfFp39xTPcdzH0'      # உன் key போடு
-RAZORPAY_KEY_SECRET = 'sIkybUcZa27AAkISGF9koSpS'   # உன் secret போடு
-
-# Shipping
-FREE_SHIPPING_THRESHOLD = 500   # ₹500 above = free shipping
-SHIPPING_CHARGE = 49            # below ₹500 = ₹49
-
-# Returns
-RETURN_WINDOW_DAYS = 7          # 7 days return window
-
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_shop.settings') 
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-local-dev-key') 
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_shop.settings')
 
