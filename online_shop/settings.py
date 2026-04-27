@@ -20,9 +20,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 SECRET_KEY = 'django-insecure-%9v4r=gr=*m1pz^4yzhzop-$sjp3qhs)5+kmd16a)qy^!v+ar%'
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['online-shop-w8q3.onrender.com', 'localhost', '127.0.0.1']
 
 # --------------------------------------------------
 # Application Definition
@@ -103,14 +103,6 @@ USE_I18N = True
 USE_TZ = True
 # settings.py
 
-ALLOWED_HOSTS = [
-    '.vercel.app',
-    '127.0.0.1',
-    'localhost',
-]
-
-# Static files (Vercel can't serve Django static files natively)
-ALLOWED_HOSTS = ['*']  # or your vercel domain
 
 # Static files
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -157,7 +149,7 @@ RETURN_WINDOW_DAYS = 7 # 7 days return window # Twilio Settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_shop.settings') 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-local-dev-key') 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_shop.settings')
 
