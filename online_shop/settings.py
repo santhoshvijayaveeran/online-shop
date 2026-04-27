@@ -153,6 +153,8 @@ FREE_SHIPPING_THRESHOLD = 500 # ₹500 above = free shipping
 SHIPPING_CHARGE = 49 # below ₹500 = ₹49 # Returns
 RETURN_WINDOW_DAYS = 7 # 7 days return window # Twilio Settings 
 
+
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_shop.settings') 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-local-dev-key') 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
