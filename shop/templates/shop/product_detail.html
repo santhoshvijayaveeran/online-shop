@@ -1,0 +1,564 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+
+    <!-- Breadcrumb -->
+    <div style="font-size:0.85rem;color:var(--gray);margin-bottom:28px;">
+        <a href="{% url 'home' %}" style="color:var(--gray);text-decoration:none;" onmouseover="this.style.color='var(--black)'" onmouseout="this.style.color='var(--gray)'">Home</a>
+        <span style="margin:0 8px;">›</span>
+        <span style="color:var(--black);font-weight:500;">{{ product.name }}</span>
+    </div>
+
+    <div class="row g-5">
+
+        <!-- Product Image with Zoom -->
+        <div class="col-lg-5">
+            <div style="position:sticky;top:80px;">
+                <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;overflow:hidden;position:relative;">
+                    {% if product.image %}
+                    <div style="overflow:hidden;border-radius:8px;cursor:zoom-in;position:relative;"
+                         id="imageWrapper"
+                         onmousemove="zoomImage(event)"
+                         onmouseleave="resetZoom()"
+                         onmouseenter="showZoom()">
+                        <img src="{{ product.image.url }}"
+                             alt="{{ product.name }}"
+                             id="mainImage"
+                             style="width:100%;max-height:420px;object-fit:cover;border-radius:8px;transition:transform 0.1s;transform-origin:center;">
+                        <div id="zoomLens"
+                             style="position:absolute;border:2px solid var(--black);border-radius:4px;width:80px;height:80px;pointer-events:none;display:none;opacity:0.5;background:rgba(255,255,255,0.3);"></div>
+                    </div>
+                    <div style="text-align:center;margin-top:8px;font-size:0.75rem;color:var(--gray);">
+                        🔍 Hover to zoom
+                    </div>
+                    {% else %}
+                    <div style="height:380px;background:var(--gray-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:5rem;">
+                        🛍
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="col-lg-7">
+            <span style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--gray);font-weight:600;">{{ product.category }}</span>
+            <h1 style="font-size:1.9rem;font-weight:700;letter-spacing:-0.5px;margin:8px 0 12px;">{{ product.name }}</h1>
+
+            <!-- Rating -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <div style="display:flex;gap:2px;">
+                    {% for i in star_range %}
+                    <i class="fas fa-star" style="color:{% if i <= avg_rating %}#111{% else %}#ddd{% endif %};font-size:0.85rem;"></i>
+                    {% endfor %}
+                </div>
+                <span style="font-weight:700;font-size:0.9rem;">{{ avg_rating }}</span>
+                <span style="color:var(--gray);font-size:0.88rem;">{{ reviews.count }} reviews</span>
+            </div>
+
+            <!-- Price -->
+            <div style="font-size:2rem;font-weight:800;letter-spacing:-1px;margin-bottom:20px;">₹{{ product.price }}</div>
+
+            <!-- Bulk Discounts -->
+            {% if bulk_discounts %}
+            <div style="margin-bottom:20px;">
+                <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Bulk Offers</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    {% for bd in bulk_discounts %}
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:8px 14px;">
+                        <span style="font-size:1rem;">🏷️</span>
+                        <span style="font-size:0.85rem;font-weight:600;color:#276749;">
+                            Buy {{ bd.min_quantity }}+ get <strong>{{ bd.discount_percentage }}% off</strong>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Stock Badge -->
+            {% if product.is_out_of_stock %}
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#fff5f5;border:1px solid #fed7d7;border-radius:6px;padding:6px 14px;margin-bottom:20px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#e53e3e;"></div>
+                <span style="font-size:0.82rem;font-weight:600;color:#e53e3e;">Out of Stock</span>
+            </div>
+            {% elif product.is_low_stock %}
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:6px 14px;margin-bottom:20px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></div>
+                <span style="font-size:0.82rem;font-weight:600;color:#92400e;">Only {{ product.stock }} left!</span>
+            </div>
+            {% else %}
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:6px;padding:6px 14px;margin-bottom:20px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#48bb78;"></div>
+                <span style="font-size:0.82rem;font-weight:600;color:#276749;">In Stock ({{ product.stock }})</span>
+            </div>
+            {% endif %}
+
+            <!-- Description -->
+            {% if product.description %}
+            <p style="color:var(--gray-dark);line-height:1.7;font-size:0.92rem;margin-bottom:24px;">{{ product.description }}</p>
+            {% endif %}
+
+            <!-- Variants -->
+            {% if product.variants.exists %}
+            <div style="margin-bottom:20px;">
+
+                <!-- Size Variants -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;color:var(--gray);">Size</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        {% for variant in product.variants.all %}
+                        {% if variant.size %}
+                        <button type="button"
+                                onclick="selectVariant({{ variant.id }}, '{{ variant.size }}', '{{ variant.color }}', {{ variant.get_final_price }})"
+                                data-variant="{{ variant.id }}"
+                                style="padding:8px 18px;border:2px solid var(--border);border-radius:8px;background:var(--card-bg);font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;transition:0.2s;color:var(--text);{% if variant.stock == 0 %}opacity:0.4;cursor:not-allowed;text-decoration:line-through;{% endif %}"
+                                {% if variant.stock == 0 %}disabled{% endif %}>
+                            {{ variant.size }}
+                            {% if variant.price_extra > 0 %}+₹{{ variant.price_extra }}{% endif %}
+                        </button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Color Variants -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;color:var(--gray);">
+                        Color: <span id="selectedColor" style="color:var(--black);text-transform:none;">—</span>
+                    </label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        {% for variant in product.variants.all %}
+                        {% if variant.color %}
+                        <button type="button"
+                                onclick="selectVariant({{ variant.id }}, '{{ variant.size }}', '{{ variant.color }}', {{ variant.get_final_price }})"
+                                data-variant="{{ variant.id }}"
+                                title="{{ variant.color }}"
+                                style="width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:{{ variant.color }};cursor:pointer;transition:0.2s;{% if variant.stock == 0 %}opacity:0.3;cursor:not-allowed;{% endif %}"
+                                {% if variant.stock == 0 %}disabled{% endif %}>
+                        </button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Selected Variant Info -->
+                <div id="variantInfo" style="display:none;background:var(--gray-light);border-radius:8px;padding:12px;font-size:0.85rem;margin-top:8px;">
+                    <span style="font-weight:600;">Selected: </span>
+                    <span id="variantLabel"></span>
+                    <span style="margin-left:8px;font-weight:700;" id="variantPrice"></span>
+                </div>
+            </div>
+            <input type="hidden" id="selectedVariantId" value="">
+            {% endif %}
+
+            <!-- Actions -->
+            <div style="display:flex;gap:10px;margin-bottom:28px;">
+                {% if request.user.is_authenticated %}
+                    {% if product.is_out_of_stock and not product.variants.exists %}
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                        <button disabled style="width:100%;padding:13px;background:var(--gray-light);border:none;border-radius:8px;color:var(--gray);font-weight:700;cursor:not-allowed;font-family:'Inter',sans-serif;">
+                            Out of Stock
+                        </button>
+                        <a href="{% url 'notify_me' product.id %}"
+                           style="display:block;text-align:center;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;transition:0.2s;"
+                           onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">
+                            🔔 Notify Me When Available
+                        </a>
+                    </div>
+                    {% else %}
+                    <a href="#" onclick="addToCartWithVariant(event, {{ product.id }})" class="btn-primary-min" style="flex:1;justify-content:center;padding:13px;">
+                        <i class="fas fa-shopping-bag me-2"></i>Add to Cart
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'add_to_wishlist' product.id %}" class="btn-outline-min" style="padding:13px 18px;">
+                        <i class="far fa-heart"></i>
+                    </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn-primary-min" style="flex:1;justify-content:center;padding:13px;">
+                    Login to Buy
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Share Product -->
+<div style="margin-bottom:28px;">
+    <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:10px;">Share</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+        <!-- WhatsApp -->
+        <a href="https://wa.me/?text={{ product.name }} — ₹{{ product.price }} | {{ request.build_absolute_uri }}"
+           target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#25D366;color:white;border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;transition:0.2s;"
+           onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+
+        <!-- Twitter/X -->
+        <a href="https://twitter.com/intent/tweet?text=Check out {{ product.name }} — ₹{{ product.price }}&url={{ request.build_absolute_uri }}"
+           target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#000000;color:white;border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;transition:0.2s;"
+           onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <i class="fab fa-x-twitter"></i> X
+        </a>
+
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}"
+           target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#1877F2;color:white;border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;transition:0.2s;"
+           onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <i class="fab fa-facebook-f"></i> Facebook
+        </a>
+
+        <!-- Copy Link -->
+        <button onclick="copyLink()"
+                style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--gray-light);color:var(--black);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:0.2s;"
+                id="copyBtn">
+            <i class="fas fa-link"></i> Copy Link
+        </button>
+    </div>
+</div>
+
+            <!-- Features -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;">
+                <div style="background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                    <div style="font-size:1.3rem;margin-bottom:4px;">🚚</div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray-dark);">Free Shipping</div>
+                </div>
+                <div style="background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                    <div style="font-size:1.3rem;margin-bottom:4px;">🔄</div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray-dark);">Easy Returns</div>
+                </div>
+                <div style="background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                    <div style="font-size:1.3rem;margin-bottom:4px;">🔒</div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray-dark);">Secure Pay</div>
+                </div>
+            </div>
+
+            <!-- Related Products -->
+            {% if related_products %}
+            <div>
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;color:var(--gray);">Related Products</h6>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    {% for rp in related_products %}
+                    <a href="{% url 'product_detail' rp.id %}" style="text-decoration:none;">
+                        <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;transition:0.2s;"
+                             onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">
+                            {% if rp.image %}
+                            <img src="{{ rp.image.url }}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+                            {% else %}
+                            <div style="width:44px;height:44px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;">🛍</div>
+                            {% endif %}
+                            <div style="flex:1;">
+                                <div style="font-size:0.88rem;font-weight:600;color:var(--black);">{{ rp.name }}</div>
+                            </div>
+                            <div style="font-weight:700;color:var(--black);font-size:0.9rem;">₹{{ rp.price }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div style="margin-top:56px;">
+        <h4 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:28px;">Reviews</h4>
+
+        {% if request.user.is_authenticated and not user_reviewed %}
+        <div style="background:var(--gray-light);border-radius:12px;padding:24px;margin-bottom:32px;">
+            <h6 style="font-weight:700;margin-bottom:16px;font-size:0.9rem;">Write a Review</h6>
+            <form method="post" action="{% url 'add_review' product.id %}">
+                {% csrf_token %}
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:8px;color:var(--gray);">RATING</label>
+                    <div style="display:flex;gap:6px;">
+                        {% for i in star_range %}
+                        <label style="cursor:pointer;font-size:1.6rem;opacity:0.3;transition:0.2s;" class="star-lbl">
+                            <input type="radio" name="rating" value="{{ i }}" style="display:none;" required>
+                            ★
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <textarea name="comment" rows="3" required class="input-min"
+                              placeholder="Share your experience..." style="resize:none;"></textarea>
+                              <div style="margin-bottom:14px;">
+    <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;color:var(--gray);">
+        PHOTO (Optional)
+        {% if review.image %}
+<div style="margin-top:10px;">
+    <img src="{{ review.image.url }}"
+         style="max-width:200px;border-radius:8px;border:1px solid var(--border);cursor:pointer;"
+         onclick="this.style.maxWidth = this.style.maxWidth === '100%' ? '200px' : '100%'">
+    <div style="font-size:0.72rem;color:var(--gray);margin-top:4px;">Click to expand</div>
+</div>
+{% endif %}
+    </label>
+    <input type="file" name="review_image" accept="image/*"
+           class="input-min" style="padding:8px;">
+    <div style="font-size:0.72rem;color:var(--gray);margin-top:4px;">
+        Add a photo to help others — Max 5MB
+    </div>
+</div>
+                </div>
+                <button type="submit" class="btn-primary-min" style="padding:9px 22px;">Submit Review</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if reviews %}
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            {% for review in reviews %}
+            <div style="padding:18px 0;border-bottom:1px solid var(--border);">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:36px;height:36px;background:var(--black);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem;">
+                            {{ review.user.username|first|upper }}
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:0.9rem;">{{ review.user.username }}</div>
+                            <div style="font-size:0.75rem;color:var(--gray);">{{ review.created_at|date:"M d, Y" }}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="display:flex;gap:2px;">
+                            {% for i in star_range %}
+                            <i class="fas fa-star" style="color:{% if i <= review.rating %}#111{% else %}#ddd{% endif %};font-size:0.75rem;"></i>
+                            {% endfor %}
+                        </div>
+                        {% if review.user == request.user %}
+                        <form method="post" action="{% url 'add_review' product.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <button type="submit" style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:0.78rem;"
+                                    onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--gray)'"
+                                    onclick="return confirm('Delete review?')">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                <p style="color:var(--gray-dark);font-size:0.9rem;line-height:1.6;margin:0;">{{ review.comment }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:40px;color:var(--gray);font-size:0.9rem;">
+            No reviews yet. Be the first to review!
+        </div>
+        {% endif %}
+    </div>
+</div>
+<!-- Q&A SECTION -->
+<div style="margin-top:40px;">
+    <h4 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:24px;">
+        ❓ Questions & Answers
+        <span style="font-size:0.85rem;font-weight:500;color:var(--gray);margin-left:8px;">{{ questions.count }}</span>
+    </h4>
+
+    <!-- Ask Question -->
+    {% if request.user.is_authenticated %}
+    <div style="background:var(--gray-light);border-radius:12px;padding:20px;margin-bottom:28px;">
+        <h6 style="font-weight:700;font-size:0.88rem;margin-bottom:12px;">Ask a Question</h6>
+        <form method="post" action="{% url 'ask_question' product.id %}">
+            {% csrf_token %}
+            <div style="display:flex;gap:10px;">
+                <input type="text" name="question" required class="input-min"
+                       placeholder="What would you like to know about this product?"
+                       style="flex:1;">
+                <button type="submit" class="btn-primary-min" style="padding:10px 20px;white-space:nowrap;">
+                    Ask
+                </button>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div style="background:var(--gray-light);border-radius:8px;padding:14px;margin-bottom:24px;font-size:0.88rem;color:var(--gray);">
+        <a href="{% url 'login' %}" style="color:var(--black);font-weight:600;text-decoration:none;">Login</a> to ask a question.
+    </div>
+    {% endif %}
+
+    <!-- Questions List -->
+    {% if questions %}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        {% for q in questions %}
+        <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+
+            <!-- Question -->
+            <div style="padding:16px 20px;background:var(--card-bg);">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:32px;height:32px;background:var(--black);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.8rem;flex-shrink:0;">
+                            {{ q.user.username|first|upper }}
+                        </div>
+                        <div>
+                            <span style="font-weight:600;font-size:0.88rem;">{{ q.user.username }}</span>
+                            <span style="font-size:0.75rem;color:var(--gray);margin-left:8px;">{{ q.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                    {% if q.user == request.user %}
+                    <form method="post" action="{% url 'delete_question' q.id %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:0.78rem;"
+                                onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--gray)'"
+                                onclick="return confirm('Delete question?')">
+                            Delete
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <p style="font-size:0.9rem;color:var(--text);margin:0;padding-left:42px;">
+                    <strong>Q:</strong> {{ q.question }}
+                </p>
+            </div>
+
+            <!-- Answer -->
+            {% if q.answer %}
+            <div style="padding:14px 20px;background:var(--gray-light);border-top:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span style="background:var(--black);color:white;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;">ANSWER</span>
+                    <span style="font-size:0.75rem;color:var(--gray);">by {{ q.answer.user.username }} · {{ q.answer.created_at|date:"M d, Y" }}</span>
+                </div>
+                <p style="font-size:0.9rem;color:var(--text);margin:0;">{{ q.answer.answer }}</p>
+            </div>
+            {% else %}
+            <!-- Answer Form — Staff only -->
+            {% if request.user.is_staff %}
+            <div style="padding:14px 20px;background:var(--gray-light);border-top:1px solid var(--border);">
+                <form method="post" action="{% url 'answer_question' q.id %}">
+                    {% csrf_token %}
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" name="answer" required class="input-min"
+                               placeholder="Write an answer..." style="flex:1;font-size:0.85rem;">
+                        <button type="submit" class="btn-primary-min" style="padding:8px 16px;font-size:0.82rem;">
+                            Answer
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div style="padding:12px 20px;background:var(--gray-light);border-top:1px solid var(--border);">
+                <span style="font-size:0.82rem;color:var(--gray);font-style:italic;">No answer yet.</span>
+            </div>
+            {% endif %}
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:var(--gray);font-size:0.9rem;">
+        No questions yet. Be the first to ask!
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.star-lbl').forEach((lbl, idx, arr) => {
+    lbl.addEventListener('mouseover', () => {
+        arr.forEach((l, i) => l.style.opacity = i <= idx ? '1' : '0.3');
+    });
+    lbl.addEventListener('mouseout', () => {
+        arr.forEach(l => {
+            const checked = l.querySelector('input:checked');
+            if (!checked) l.style.opacity = '0.3';
+        });
+    });
+    lbl.querySelector('input').addEventListener('change', () => {
+        arr.forEach((l, i) => l.style.opacity = i <= idx ? '1' : '0.3');
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Image Zoom
+function zoomImage(e) {
+    const wrapper = document.getElementById('imageWrapper');
+    const img = document.getElementById('mainImage');
+    const lens = document.getElementById('zoomLens');
+    const rect = wrapper.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+    img.style.transform = `scale(2.5)`;
+    img.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+    lens.style.display = 'block';
+    lens.style.left = (x - 40) + 'px';
+    lens.style.top = (y - 40) + 'px';
+}
+
+function resetZoom() {
+    const img = document.getElementById('mainImage');
+    const lens = document.getElementById('zoomLens');
+    img.style.transform = 'scale(1)';
+    img.style.transformOrigin = 'center';
+    lens.style.display = 'none';
+}
+
+function showZoom() {
+    document.getElementById('zoomLens').style.display = 'block';
+}
+
+// Variant Selection
+let selectedVariantId = null;
+
+function selectVariant(variantId, size, color, price) {
+    selectedVariantId = variantId;
+    document.getElementById('selectedVariantId').value = variantId;
+
+    document.querySelectorAll('[data-variant]').forEach(btn => {
+        btn.style.borderColor = 'var(--border)';
+    });
+
+    const selectedBtn = document.querySelector(`[data-variant="${variantId}"]`);
+    if (selectedBtn) {
+        selectedBtn.style.borderColor = 'var(--black)';
+        selectedBtn.style.borderWidth = '2px';
+    }
+
+    document.getElementById('variantInfo').style.display = 'block';
+    let label = [];
+    if (size) label.push(size);
+    if (color) {
+        label.push(color);
+        const colorEl = document.getElementById('selectedColor');
+        if (colorEl) colorEl.textContent = color;
+    }
+    document.getElementById('variantLabel').textContent = label.join(' / ');
+    document.getElementById('variantPrice').textContent = '₹' + price;
+}
+
+function addToCartWithVariant(e, productId) {
+    e.preventDefault();
+    let url = `/add-to-cart/${productId}/`;
+    if (selectedVariantId) {
+        url += `?variant_id=${selectedVariantId}`;
+    }
+    window.location.href = url;
+}
+
+// Copy Link
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.style.background = '#f0fff4';
+        btn.style.borderColor = '#c6f6d5';
+        btn.style.color = '#276749';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-link"></i> Copy Link';
+            btn.style.background = 'var(--gray-light)';
+            btn.style.borderColor = 'var(--border)';
+            btn.style.color = 'var(--black)';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

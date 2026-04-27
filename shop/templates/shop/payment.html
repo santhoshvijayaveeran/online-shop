@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+    <div style="width:100%;max-width:480px;">
+        <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:40px;text-align:center;">
+            <div style="font-size:2.5rem;margin-bottom:16px;">💳</div>
+            <h3 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;">Complete Payment</h3>
+            <p style="color:var(--gray);font-size:0.9rem;margin-bottom:28px;">Order #{{ order.id }} · ₹{{ total }}</p>
+
+            <div style="background:var(--gray-light);border-radius:8px;padding:16px;margin-bottom:24px;">
+                <div style="font-size:1.8rem;font-weight:800;letter-spacing:-1px;">₹{{ total }}</div>
+                <div style="font-size:0.82rem;color:var(--gray);margin-top:4px;">Total Amount</div>
+            </div>
+
+            <button id="rzp-btn" class="btn-primary-min" style="width:100%;justify-content:center;padding:14px;font-size:1rem;margin-bottom:12px;">
+                Pay Now
+            </button>
+
+            <a href="{% url 'cart' %}" style="display:block;font-size:0.85rem;color:var(--gray);text-decoration:none;margin-top:8px;">
+                ← Back to Cart
+            </a>
+
+            <p style="font-size:0.75rem;color:var(--gray);margin-top:16px;">
+                🔒 100% Secure · Powered by Razorpay
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    key: "{{ razorpay_key }}",
+    amount: "{{ amount }}",
+    currency: "INR",
+    name: "Online Shop",
+    description: "Order #{{ order.id }}",
+    order_id: "{{ razorpay_order_id }}",
+    handler: function(response) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'payment_success' %}";
+
+        var fields = {
+            'razorpay_payment_id': response.razorpay_payment_id,
+            'razorpay_order_id': response.razorpay_order_id,
+            'razorpay_signature': response.razorpay_signature,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        };
+
+        Object.keys(fields).forEach(key => {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    },
+    prefill: {
+        name: "{{ user.username }}",
+        email: "{{ user.email }}"
+    },
+    theme: { color: "#111111" },
+    modal: {
+        ondismiss: function() {
+            window.location.href = "{% url 'payment_failed' %}";
+        }
+    }
+};
+
+document.getElementById('rzp-btn').onclick = function() {
+    var rzp = new Razorpay(options);
+    rzp.open();
+};
+</script>
+{% endblock %}

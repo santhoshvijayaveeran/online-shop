@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="padding:40px;">
+    <h2>My Orders</h2>
+    {% for order in orders %}
+    <div style="border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:15px;">
+        <p><strong>Order #{{ order.id }}</strong></p>
+        <p>Date: {{ order.created_at }}</p>
+        <p>Status: {{ order.status }}</p>
+        <a href="/order-confirmation/{{ order.id }}/">View Details</a>
+    </div>
+    {% empty %}
+        <p>No orders yet. <a href="/products/">Shop Now!</a></p>
+    {% endfor %}
+</div>
+{% endblock %}

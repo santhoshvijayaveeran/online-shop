@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+        <div>
+            <a href="{% url 'admin_dashboard' %}" style="font-size:0.85rem;color:var(--gray);text-decoration:none;">← Dashboard</a>
+            <h2 style="font-weight:700;letter-spacing:-0.5px;margin:6px 0 0;">Manage Products</h2>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <a href="{% url 'add_product' %}" class="btn-primary-min" style="padding:10px 20px;">
+                + Add Product
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div style="background:{% if 'error' in message.tags %}#fff5f5;border:1px solid #fed7d7;color:#e53e3e;{% else %}#f0fff4;border:1px solid #c6f6d5;color:#276749;{% endif %}border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:0.88rem;">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Add Category -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;">
+        <form method="post" action="{% url 'add_category' %}" style="display:flex;gap:10px;align-items:center;">
+            {% csrf_token %}
+            <input type="text" name="name" class="input-min" placeholder="New category name..." style="max-width:260px;">
+            <button type="submit" class="btn-outline-min" style="padding:9px 18px;white-space:nowrap;">+ Add Category</button>
+        </form>
+    </div>
+
+    <!-- Filters -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;">
+        <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+            <div>
+                <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--gray);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Search</label>
+                <input type="text" name="q" value="{{ search }}" class="input-min" placeholder="Product name..." style="width:200px;">
+            </div>
+            <div>
+                <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--gray);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Category</label>
+                <select name="category" class="input-min" style="width:160px;">
+                    <option value="">All</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--gray);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Stock</label>
+                <select name="stock" class="input-min" style="width:140px;">
+                    <option value="">All</option>
+                    <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of Stock</option>
+                    <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary-min" style="padding:10px 18px;">Filter</button>
+            <a href="{% url 'manage_products' %}" class="btn-outline-min" style="padding:10px 18px;">Clear</a>
+        </form>
+    </div>
+
+    <!-- Products Table -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:0.88rem;">{{ products.count }} Products</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--black);">
+                        <th style="padding:12px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Product</th>
+                        <th style="padding:12px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Category</th>
+                        <th style="padding:12px 16px;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Price</th>
+                        <th style="padding:12px 16px;text-align:center;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Stock</th>
+                        <th style="padding:12px 16px;text-align:center;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Status</th>
+                        <th style="padding:12px 16px;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr style="border-bottom:1px solid var(--border);transition:0.15s;"
+                        onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+                        <td style="padding:14px 16px;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                {% if product.image %}
+                                <img src="{{ product.image.url }}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;">
+                                {% else %}
+                                <div style="width:44px;height:44px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🛍</div>
+                                {% endif %}
+                                <div>
+                                    <div style="font-weight:600;">{{ product.name }}</div>
+                                    <div style="font-size:0.75rem;color:var(--gray);">ID: #{{ product.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding:14px 16px;color:var(--gray-dark);">{{ product.category }}</td>
+                        <td style="padding:14px 16px;text-align:right;font-weight:700;">₹{{ product.price }}</td>
+                        <td style="padding:14px 16px;text-align:center;">
+                            {% if product.stock == 0 %}
+                            <span style="background:#fff5f5;color:#e53e3e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">0</span>
+                            {% elif product.stock <= 5 %}
+                            <span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">{{ product.stock }}</span>
+                            {% else %}
+                            <span style="background:#f0fff4;color:#276749;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">{{ product.stock }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:14px 16px;text-align:center;">
+                            {% if product.is_active %}
+                            <span style="background:#f0fff4;color:#276749;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">Active</span>
+                            {% else %}
+                            <span style="background:#f5f5f5;color:var(--gray);padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:14px 16px;text-align:right;">
+                            <div style="display:flex;gap:6px;justify-content:flex-end;">
+                                <a href="{% url 'product_detail' product.id %}" class="btn-outline-min" style="padding:5px 12px;font-size:0.78rem;">View</a>
+                                <a href="{% url 'edit_product' product.id %}" class="btn-primary-min" style="padding:5px 12px;font-size:0.78rem;">Edit</a>
+                                <form method="post" action="{% url 'delete_product' product.id %}"
+                                      onsubmit="return confirm('Delete {{ product.name }}?')">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            style="background:none;border:1px solid #fed7d7;border-radius:8px;color:#e53e3e;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:0.2s;"
+                                            onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding:40px;text-align:center;color:var(--gray);">
+                            No products found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

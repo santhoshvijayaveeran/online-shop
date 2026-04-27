@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div style="max-width:640px;margin:0 auto;">
+        <div style="margin-bottom:28px;">
+            <a href="{% url 'profile' %}" style="font-size:0.85rem;color:var(--gray);text-decoration:none;">← Back to Profile</a>
+            <h2 style="font-weight:700;letter-spacing:-0.5px;margin-top:10px;">Edit Profile</h2>
+        </div>
+
+        {% if messages %}
+        {% for message in messages %}
+        <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:0.88rem;color:#276749;">
+            ✓ {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Avatar -->
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:16px;">Profile Photo</h6>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:1px solid var(--border);">
+                    {% else %}
+                    <div style="width:70px;height:70px;background:var(--black);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem;font-weight:700;flex-shrink:0;">
+                        {{ request.user.username|first|upper }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <input type="file" name="avatar" accept="image/*" class="input-min" style="padding:7px;">
+                        <div style="font-size:0.75rem;color:var(--gray);margin-top:4px;">JPG, PNG — Max 2MB</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Info -->
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Personal Info</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">First Name</label>
+                        <input type="text" name="first_name" value="{{ request.user.first_name }}" class="input-min" placeholder="First name">
+                    </div>
+                    <div class="col-md-6">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Last Name</label>
+                        <input type="text" name="last_name" value="{{ request.user.last_name }}" class="input-min" placeholder="Last name">
+                    </div>
+                    <div class="col-md-6">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Email</label>
+                        <input type="email" name="email" value="{{ request.user.email }}" class="input-min" placeholder="Email">
+                    </div>
+                    <div class="col-md-6">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Phone</label>
+                        <input type="text" name="phone" value="{{ profile.phone }}" class="input-min" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-12">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Bio</label>
+                        <textarea name="bio" rows="2" class="input-min" style="resize:none;" placeholder="Tell us about yourself...">{{ profile.bio }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Delivery Address</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Address</label>
+                        <textarea name="address" rows="2" class="input-min" style="resize:none;" placeholder="House no, Street, Area...">{{ profile.address }}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">City</label>
+                        <input type="text" name="city" value="{{ profile.city }}" class="input-min" placeholder="City">
+                    </div>
+                    <div class="col-md-4">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">State</label>
+                        <input type="text" name="state" value="{{ profile.state }}" class="input-min" placeholder="State">
+                    </div>
+                    <div class="col-md-4">
+                        <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;">Pincode</label>
+                        <input type="text" name="pincode" value="{{ profile.pincode }}" class="input-min" placeholder="600001">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn-primary-min" style="padding:12px 28px;">Save Changes</button>
+                <a href="{% url 'profile' %}" class="btn-outline-min" style="padding:12px 28px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

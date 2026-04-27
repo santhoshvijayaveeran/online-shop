@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+        <div>
+            <a href="{% url 'admin_dashboard' %}" style="font-size:0.85rem;color:var(--gray);text-decoration:none;">← Dashboard</a>
+            <h2 style="font-weight:700;letter-spacing:-0.5px;margin:6px 0 0;">Return Requests</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:0.88rem;color:#276749;">
+        ✓ {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:12px;padding:18px;cursor:pointer;"
+                 onclick="window.location='?status=pending'">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:#92400e;margin-bottom:6px;">Pending</div>
+                <div style="font-size:1.8rem;font-weight:800;color:#92400e;">{{ pending_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px;cursor:pointer;"
+                 onclick="window.location='?status=approved'">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:#1d4ed8;margin-bottom:6px;">Approved</div>
+                <div style="font-size:1.8rem;font-weight:800;color:#1d4ed8;">{{ approved_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:12px;padding:18px;cursor:pointer;"
+                 onclick="window.location='?status=completed'">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:#276749;margin-bottom:6px;">Completed</div>
+                <div style="font-size:1.8rem;font-weight:800;color:#276749;">{{ completed_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:12px;padding:18px;cursor:pointer;"
+                 onclick="window.location='?status=rejected'">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:#e53e3e;margin-bottom:6px;">Rejected</div>
+                <div style="font-size:1.8rem;font-weight:800;color:#e53e3e;">{{ rejected_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <a href="{% url 'manage_returns' %}" class="{% if not status_filter %}btn-primary-min{% else %}btn-outline-min{% endif %}" style="padding:7px 16px;font-size:0.82rem;">All</a>
+        <a href="?status=pending" class="{% if status_filter == 'pending' %}btn-primary-min{% else %}btn-outline-min{% endif %}" style="padding:7px 16px;font-size:0.82rem;">Pending</a>
+        <a href="?status=approved" class="{% if status_filter == 'approved' %}btn-primary-min{% else %}btn-outline-min{% endif %}" style="padding:7px 16px;font-size:0.82rem;">Approved</a>
+        <a href="?status=completed" class="{% if status_filter == 'completed' %}btn-primary-min{% else %}btn-outline-min{% endif %}" style="padding:7px 16px;font-size:0.82rem;">Completed</a>
+        <a href="?status=rejected" class="{% if status_filter == 'rejected' %}btn-primary-min{% else %}btn-outline-min{% endif %}" style="padding:7px 16px;font-size:0.82rem;">Rejected</a>
+    </div>
+
+    <!-- Returns List -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for ret in returns %}
+        <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+                <div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                        <span style="font-weight:700;">Return #{{ ret.id }}</span>
+                        <span style="font-size:0.75rem;color:var(--gray);">→ Order #{{ ret.order.id }}</span>
+                    </div>
+                    <div style="font-size:0.82rem;color:var(--gray);">
+                        <strong style="color:var(--black);">{{ ret.user.username }}</strong>
+                        · {{ ret.created_at|date:"M d, Y · h:i A" }}
+                    </div>
+                </div>
+                <span style="padding:4px 14px;border-radius:4px;font-size:0.78rem;font-weight:700;
+                    {% if ret.status == 'approved' or ret.status == 'completed' %}background:#f0fff4;color:#276749;
+                    {% elif ret.status == 'rejected' %}background:#fff5f5;color:#e53e3e;
+                    {% else %}background:#fffbeb;color:#92400e;{% endif %}">
+                    {{ ret.status|capfirst }}
+                </span>
+            </div>
+
+            <div style="background:var(--gray-light);border-radius:8px;padding:12px;margin-bottom:14px;">
+                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:4px;">Reason</div>
+                <div style="font-weight:600;font-size:0.88rem;">{{ ret.get_reason_display }}</div>
+                {% if ret.description %}
+                <div style="font-size:0.85rem;color:var(--gray-dark);margin-top:6px;">{{ ret.description }}</div>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <a href="{% url 'admin_order_detail' ret.order.id %}" style="font-size:0.82rem;color:var(--black);text-decoration:none;font-weight:600;">
+                    View Order #{{ ret.order.id }} →
+                </a>
+                {% if ret.status == 'pending' %}
+                <div style="display:flex;gap:8px;">
+                    <form method="post" action="{% url 'handle_return' ret.id %}">
+                        {% csrf_token %}
+                        <button name="action" value="approve" class="btn-primary-min" style="padding:7px 16px;font-size:0.82rem;">
+                            ✓ Approve
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'handle_return' ret.id %}">
+                        {% csrf_token %}
+                        <button name="action" value="reject"
+                                style="background:none;border:1px solid #fed7d7;border-radius:8px;color:#e53e3e;padding:7px 16px;font-size:0.82rem;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;">
+                            ✕ Reject
+                        </button>
+                    </form>
+                </div>
+                {% elif ret.status == 'approved' %}
+                <form method="post" action="{% url 'handle_return' ret.id %}">
+                    {% csrf_token %}
+                    <button name="action" value="complete" class="btn-primary-min" style="padding:7px 16px;font-size:0.82rem;">
+                        Mark Complete
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:60px;color:var(--gray);">
+            <div style="font-size:3rem;margin-bottom:12px;">🔄</div>
+            <p>No return requests found.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

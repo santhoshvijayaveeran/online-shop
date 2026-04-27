@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div style="max-width:580px;margin:0 auto;">
+        <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:40px;">
+            <div style="text-align:center;margin-bottom:32px;">
+                <div style="width:60px;height:60px;background:#f0fff4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 16px;">✓</div>
+                <h2 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;">Order confirmed!</h2>
+                <p style="color:var(--gray);font-size:0.9rem;">Order <strong style="color:var(--black);">#{{ order.id }}</strong> has been placed</p>
+                <span style="background:var(--gray-light);color:var(--gray-dark);padding:4px 12px;border-radius:4px;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+                    {{ order.status }}
+                </span>
+            </div>
+
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--black);">
+                        <th style="padding:10px 0;text-align:left;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Product</th>
+                        <th style="padding:10px 0;text-align:center;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Qty</th>
+                        <th style="padding:10px 0;text-align:right;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:12px 0;font-weight:600;font-size:0.9rem;">{{ item.product.name }}</td>
+                        <td style="padding:12px 0;text-align:center;color:var(--gray);font-size:0.9rem;">{{ item.quantity }}</td>
+                        <td style="padding:12px 0;text-align:right;font-weight:700;font-size:0.9rem;">₹{{ item.get_subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="display:flex;justify-content:space-between;padding:14px 0;border-top:2px solid var(--black);margin-bottom:28px;">
+                <span style="font-weight:700;font-size:1rem;">Total Paid</span>
+                <span style="font-weight:800;font-size:1.2rem;">₹{{ order.total_price }}</span>
+            </div>
+            <a href="{% url 'order_tracking' order.id %}" class="btn-outline-min" style="padding:12px 28px;margin-right:10px;">
+    <i class="fas fa-map-marker-alt me-2"></i>Track Order
+</a>
+            <a href="{% url 'home' %}" class="btn-primary-min" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
+                Continue Shopping
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="section-title">Checkout</h2>
+
+    <div class="row g-4">
+        <!-- Order Summary -->
+        <div class="col-lg-7">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Order Items</h6>
+                {% for item in cart_items %}
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+                    {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+                    {% else %}
+                    <div style="width:56px;height:56px;background:var(--gray-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">🛍</div>
+                    {% endif %}
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:0.9rem;">{{ item.product.name }}</div>
+                        <div style="font-size:0.8rem;color:var(--gray);">Qty: {{ item.quantity }}</div>
+                    </div>
+                    <div style="font-weight:700;font-size:0.9rem;">₹{{ item.get_subtotal }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Shipping Info -->
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:16px;">Shipping</h6>
+                {% if discount > 0 %}
+<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:0.9rem;">
+    <span style="color:var(--gray);">Discount</span>
+    <span style="font-weight:600;color:#276749;">− ₹{{ discount }}</span>
+</div>
+{% endif %}
+                {% if shipping == 0 %}
+                <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:14px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.3rem;">🚚</span>
+                    <div>
+                        <div style="font-weight:700;color:#276749;font-size:0.9rem;">Free Shipping Applied!</div>
+                        <div style="font-size:0.8rem;color:#48bb78;">Orders above ₹{{ free_shipping_threshold }} qualify for free shipping</div>
+                    </div>
+                </div>
+                {% else %}
+                <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;padding:14px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.3rem;">🚚</span>
+                    <div>
+                        <div style="font-weight:700;color:#92400e;font-size:0.9rem;">Standard Shipping — ₹{{ shipping }}</div>
+                        <div style="font-size:0.8rem;color:#d97706;">Add ₹{{ free_shipping_threshold|add:"-"|add:subtotal }} more for free shipping</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div style="margin-top:16px;display:flex;gap:12px;">
+                    <div style="flex:1;background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                        <div style="font-size:1.2rem;margin-bottom:4px;">📦</div>
+                        <div style="font-size:0.75rem;font-weight:600;">3-5 Business Days</div>
+                    </div>
+                    <div style="flex:1;background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                        <div style="font-size:1.2rem;margin-bottom:4px;">🔄</div>
+                        <div style="font-size:0.75rem;font-weight:600;">7-Day Returns</div>
+                    </div>
+                    <div style="flex:1;background:var(--gray-light);border-radius:8px;padding:14px;text-align:center;">
+                        <div style="font-size:1.2rem;margin-bottom:4px;">🔒</div>
+                        <div style="font-size:0.75rem;font-weight:600;">Secure Payment</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Coupon Section -->
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+    <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:14px;">
+        🎟️ Promo Code
+    </h6>
+
+    {% if coupon %}
+    <!-- Coupon Applied -->
+    <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <div style="font-weight:700;color:#276749;font-size:0.9rem;">
+                ✓ {{ coupon.code }} applied!
+            </div>
+            <div style="font-size:0.8rem;color:#48bb78;">
+                You save ₹{{ discount }}
+                {% if coupon.discount_type == 'percentage' %}
+                ({{ coupon.discount_value }}% off)
+                {% endif %}
+            </div>
+        </div>
+        <form method="post" action="{% url 'remove_coupon' %}">
+            {% csrf_token %}
+            <button type="submit"
+                    style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.82rem;font-weight:600;">
+                Remove ×
+            </button>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- Coupon Input -->
+    <form method="post" action="{% url 'apply_coupon' %}" style="display:flex;gap:8px;">
+        {% csrf_token %}
+        <input type="text" name="coupon_code"
+               class="input-min" style="flex:1;text-transform:uppercase;"
+               placeholder="Enter promo code">
+        <button type="submit" class="btn-primary-min" style="padding:10px 16px;white-space:nowrap;">
+            Apply
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+        <!-- Payment -->
+        <div class="col-lg-5">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;position:sticky;top:80px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Price Summary</h6>
+
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:0.9rem;">
+                    <span style="color:var(--gray);">Subtotal</span>
+                    <span style="font-weight:600;">₹{{ subtotal }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.9rem;">
+                    <span style="color:var(--gray);">Shipping</span>
+                    <span style="font-weight:600;color:{% if shipping == 0 %}#276749{% else %}var(--black){% endif %};">
+                        {% if shipping == 0 %}FREE{% else %}₹{{ shipping }}{% endif %}
+                    </span>
+                </div>
+                <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;margin-bottom:24px;">
+                    <span style="font-weight:700;">Total</span>
+                    <span style="font-weight:800;font-size:1.3rem;">₹{{ total }}</span>
+                </div>
+
+                <!-- Pay Online -->
+                <form method="post" action="{% url 'create_payment' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary-min" style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;margin-bottom:10px;">
+                        💳 Pay Online — ₹{{ total }}
+                    </button>
+                </form>
+
+                <div style="display:flex;align-items:center;gap:8px;margin:12px 0;">
+                    <div style="flex:1;height:1px;background:var(--border);"></div>
+                    <span style="font-size:0.78rem;color:var(--gray);">OR</span>
+                    <div style="flex:1;height:1px;background:var(--border);"></div>
+                </div>
+
+                <!-- COD -->
+                <form method="post" action="{% url 'place_order' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-outline-min" style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;">
+                        💵 Cash on Delivery
+                    </button>
+                </form>
+
+                <p style="font-size:0.75rem;color:var(--gray);text-align:center;margin-top:14px;">
+                    🔒 Secured by Razorpay · 256-bit SSL
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

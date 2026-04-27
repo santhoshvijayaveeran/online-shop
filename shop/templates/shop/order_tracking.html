@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div style="max-width:720px;margin:0 auto;">
+
+        <!-- Header -->
+        <div style="margin-bottom:28px;">
+            <a href="{% url 'my_orders' %}" style="font-size:0.85rem;color:var(--gray);text-decoration:none;">← My Orders</a>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:10px;">
+                <div>
+                    <h2 style="font-weight:700;letter-spacing:-0.5px;margin:0;">Order #{{ order.id }}</h2>
+                    <p style="color:var(--gray);font-size:0.85rem;margin:4px 0 0;">
+                        Placed on {{ order.created_at|date:"M d, Y · h:i A" }}
+                    </p>
+                </div>
+                {% if order.status in 'pending,processing' %}
+                <form method="post" action="{% url 'cancel_order' order.id %}"
+                      onsubmit="return confirm('Cancel this order?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-outline-min"
+                            style="padding:8px 16px;font-size:0.82rem;color:#e53e3e;border-color:#fed7d7;"
+                            onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='white'">
+                        Cancel Order
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if messages %}
+        {% for message in messages %}
+        <div style="background:{% if 'error' in message.tags %}#fff5f5;border:1px solid #fed7d7;color:#e53e3e;{% else %}#f0fff4;border:1px solid #c6f6d5;color:#276749;{% endif %}border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:0.88rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if order.status == 'cancelled' %}
+        <!-- Cancelled State -->
+        <div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:12px;padding:32px;text-align:center;margin-bottom:24px;">
+            <div style="font-size:3rem;margin-bottom:12px;">❌</div>
+            <h4 style="font-weight:700;color:#e53e3e;margin-bottom:6px;">Order Cancelled</h4>
+            <p style="color:#fc8181;font-size:0.88rem;">This order has been cancelled.</p>
+        </div>
+
+        {% else %}
+        <!-- Tracking Progress -->
+        <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin:0;">Tracking Status</h6>
+                {% if order.tracking_id %}
+                <span style="font-size:0.82rem;color:var(--gray);">
+                    Tracking ID: <strong style="color:var(--black);">{{ order.tracking_id }}</strong>
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="background:var(--gray-light);border-radius:4px;height:6px;margin-bottom:32px;overflow:hidden;">
+                <div style="height:100%;background:var(--black);border-radius:4px;width:{{ progress }}%;transition:width 1s ease;" id="progressBar"></div>
+            </div>
+
+            <!-- Steps -->
+            <div style="display:flex;justify-content:space-between;position:relative;">
+                {% for status, label, icon, state in status_steps %}
+                <div style="text-align:center;flex:1;position:relative;">
+                    <!-- Icon -->
+                    <div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1rem;
+                        {% if state == 'done' %}background:var(--black);color:white;
+                        {% elif state == 'active' %}background:var(--black);color:white;box-shadow:0 0 0 4px rgba(17,17,17,0.15);
+                        {% else %}background:var(--gray-light);color:var(--gray);{% endif %}">
+                        {% if state == 'done' %}
+                        <i class="fas fa-check"></i>
+                        {% else %}
+                        <i class="{{ icon }}"></i>
+                        {% endif %}
+                    </div>
+                    <!-- Label -->
+                    <div style="font-size:0.75rem;font-weight:{% if state == 'active' %}700{% else %}500{% endif %};
+                        color:{% if state == 'pending' %}var(--gray){% else %}var(--black){% endif %};">
+                        {{ label }}
+                    </div>
+                    {% if state == 'active' %}
+                    <div style="font-size:0.68rem;color:var(--gray);margin-top:2px;">In Progress</div>
+                    {% elif state == 'done' %}
+                    <div style="font-size:0.68rem;color:#48bb78;margin-top:2px;">Done ✓</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Estimated Delivery -->
+            {% if order.estimated_delivery and order.status != 'delivered' %}
+            <div style="background:var(--gray-light);border-radius:8px;padding:14px 18px;margin-top:24px;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-calendar-alt" style="color:var(--gray);"></i>
+                <div>
+                    <div style="font-size:0.78rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;">Estimated Delivery</div>
+                    <div style="font-weight:700;font-size:0.9rem;">{{ order.estimated_delivery|date:"l, M d, Y" }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if order.status == 'delivered' %}
+            <div style="background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:14px 18px;margin-top:24px;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-check-circle" style="color:#48bb78;font-size:1.2rem;"></i>
+                <div>
+                    <div style="font-weight:700;color:#276749;">Order Delivered!</div>
+                    <div style="font-size:0.82rem;color:#48bb78;">Thank you for shopping with us.</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Order Items -->
+        <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;">
+            <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Items Ordered</h6>
+            {% for item in order_items %}
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+                {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;">
+                {% else %}
+                <div style="width:56px;height:56px;background:var(--gray-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">🛍</div>
+                {% endif %}
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:0.9rem;">{{ item.product.name }}</div>
+                    <div style="font-size:0.78rem;color:var(--gray);">₹{{ item.price }} × {{ item.quantity }}</div>
+                </div>
+                <div style="font-weight:700;font-size:0.9rem;">₹{{ item.get_subtotal }}</div>
+            </div>
+            {% endfor %}
+
+            <!-- Total -->
+            <div style="display:flex;justify-content:space-between;padding-top:14px;">
+                <span style="font-weight:700;">Total Paid</span>
+                <span style="font-weight:800;font-size:1.1rem;">₹{{ order.total_price }}</span>
+            </div>
+        </div>
+
+        <!-- Shipping Address -->
+        {% if order.shipping_address %}
+        <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;">
+            <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:12px;">Shipping Address</h6>
+            <div style="display:flex;align-items:start;gap:10px;">
+                <i class="fas fa-map-marker-alt" style="color:var(--gray);margin-top:2px;"></i>
+                <div style="font-size:0.9rem;color:var(--gray-dark);line-height:1.6;">{{ order.shipping_address }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            {% if order.status == 'delivered' %}
+            <a href="{% url 'request_return' order.id %}" class="btn-outline-min" style="padding:10px 20px;">
+                🔄 Request Return
+            </a>
+            {% endif %}
+            <a href="{% url 'my_orders' %}" class="btn-primary-min" style="padding:10px 20px;">
+                View All Orders
+            </a>
+            <a href="{% url 'home' %}" class="btn-outline-min" style="padding:10px 20px;">
+                Continue Shopping
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Animate progress bar on load
+window.addEventListener('load', () => {
+    const bar = document.getElementById('progressBar');
+    if (bar) {
+        bar.style.width = '0%';
+        setTimeout(() => bar.style.width = '{{ progress }}%', 200);
+    }
+});
+</script>
+{% endblock %}

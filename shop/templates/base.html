@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- PWA -->
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Online Shop">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Shop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+      :root {
+    --black: #111111;
+    --gray-dark: #444444;
+    --gray: #888888;
+    --gray-light: #f5f5f5;
+    --border: #e8e8e8;
+    --white: #ffffff;
+    --bg: #fafafa;
+    --card-bg: #ffffff;
+    --text: #111111;
+}
+
+[data-theme="dark"] {
+    --black: #f0f0f0;
+    --gray-dark: #cccccc;
+    --gray: #999999;
+    --gray-light: #2a2a2a;
+    --border: #333333;
+    --white: #1a1a1a;
+    --bg: #121212;
+    --card-bg: #1e1e1e;
+    --text: #f0f0f0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.3s, color 0.3s;
+}
+
+.navbar {
+    background: var(--white) !important;
+    border-bottom: 1px solid var(--border);
+}
+
+.product-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+}
+
+.input-min {
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.dropdown-menu {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.dropdown-item {
+    color: var(--text) !important;
+}
+
+.dropdown-item:hover {
+    background: var(--gray-light) !important;
+}
+
+        /* NAVBAR */
+        .navbar {
+            background: var(--white) !important;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--black) !important;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-search input {
+            background: var(--gray-light);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 9px 16px;
+            width: 260px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .nav-search input:focus {
+            border-color: var(--black);
+            background: white;
+        }
+
+        .nav-search button {
+            background: var(--black);
+            border: none;
+            border-radius: 8px;
+            padding: 9px 14px;
+            color: white;
+            margin-left: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-search button:hover { background: #333; }
+
+        .btn-nav {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: var(--black);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav:hover {
+            background: var(--gray-light);
+            color: var(--black);
+            border-color: #ccc;
+        }
+
+        .btn-nav-filled {
+            background: var(--black);
+            border: 1px solid var(--black);
+            border-radius: 8px;
+            padding: 8px 18px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav-filled:hover {
+            background: #333;
+            color: white;
+        }
+
+        .cart-count {
+            background: var(--black);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        /* DROPDOWN */
+        .dropdown-menu {
+            border: 1px solid var(--border) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+            padding: 8px !important;
+        }
+
+        .dropdown-item {
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: 0.15s;
+        }
+
+        .dropdown-item:hover { background: var(--gray-light); }
+
+        /* CARDS */
+        .product-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .product-card:hover {
+            border-color: #ccc;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .product-card img {
+            height: 200px;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .product-card .card-body { padding: 14px; }
+
+        .product-card .card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--black);
+            margin-bottom: 4px;
+        }
+
+        .product-card .price {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        /* BUTTONS */
+        .btn-primary-min {
+            background: var(--black);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary-min:hover {
+            background: #333;
+            color: white;
+        }
+
+        .btn-outline-min {
+            background: white;
+            color: var(--black);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-outline-min:hover {
+            border-color: var(--black);
+            color: var(--black);
+        }
+
+        /* SECTION */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        /* INPUT */
+        .input-min {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            background: white;
+        }
+
+        .input-min:focus { border-color: var(--black); }
+
+        /* CARD CONTAINER */
+        .card-min {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px;
+        }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 72px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--white);
+            border-top: 1px solid var(--border);
+            padding: 48px 0 24px;
+            margin-top: 80px;
+        }
+
+        footer h6 {
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        footer a {
+            color: var(--gray);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        footer a:hover { color: var(--black); }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        /* SCROLL TOP */
+        #scrollTop {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: var(--black);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+            display: none;
+            cursor: pointer;
+            z-index: 999;
+            transition: 0.2s;
+        }
+
+        #scrollTop:hover { background: #333; }
+
+        /* ANIMATION */
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand" href="{% url 'home' %}">Shop.</a>
+
+        <!-- Search -->
+        <form class="nav-search d-flex mx-auto" method="GET" action="{% url 'search' %}">
+            <input type="text" name="q" placeholder="Search products..." value="{{ request.GET.q }}">
+            <button type="submit"><i class="fas fa-search" style="font-size:0.85rem;"></i></button>
+        </form>
+
+        <div class="d-flex align-items-center gap-2">
+
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'wishlist' %}" class="btn-nav">
+                <i class="far fa-heart"></i>
+            </a>
+            {% endif %}
+
+            <!-- Cart -->
+            <div class="dropdown">
+                <button class="btn-nav dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-shopping-bag"></i>
+                    Cart
+                    {% if cart_count > 0 %}
+                    <span class="cart-count">{{ cart_count }}</span>
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="width:300px;padding:16px !important;">
+                    {% if cart_items %}
+                    {% for item in cart_items %}
+                    <li style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f0f0f0;">
+                        {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+                        {% else %}
+                        <div style="width:44px;height:44px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🛍</div>
+                        {% endif %}
+                        <div>
+                            <div style="font-size:0.85rem;font-weight:600;">{{ item.product.name }}</div>
+                            <div style="font-size:0.8rem;color:var(--gray);">₹{{ item.product.price }} × {{ item.quantity }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    <li style="margin-top:12px;">
+                        <a href="{% url 'cart' %}" class="btn-primary-min" style="width:100%;justify-content:center;">View Cart</a>
+                    </li>
+                    {% else %}
+                    <li style="text-align:center;padding:20px;color:var(--gray);">
+                        <i class="fas fa-shopping-bag" style="font-size:1.8rem;color:#ddd;display:block;margin-bottom:8px;"></i>
+                        Cart is empty
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- User -->
+            {% if request.user.is_authenticated %}
+            <div class="dropdown">
+                <button class="btn-nav-filled dropdown-toggle" data-bs-toggle="dropdown">
+                    {{ request.user.username }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% if request.user.is_staff %}
+                    
+<li><a class="dropdown-item" href="{% url 'profile' %}">
+    <i class="fas fa-user me-2 text-muted"></i>My Profile
+</a></li>
+<li><hr class="dropdown-divider my-1"></li>
+                    <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}"><i class="fas fa-chart-bar me-2 text-muted"></i>Dashboard</a></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    {% endif %}
+{% if request.user.is_staff %}
+<li><a class="dropdown-item" href="{% url 'manage_products' %}">
+    <i class="fas fa-list me-2 text-muted"></i>Manage Products
+</a></li>
+{% if request.user.is_staff %}
+<li><a class="dropdown-item" href="{% url 'manage_orders' %}">
+    <i class="fas fa-list me-2 text-muted"></i>Manage Orders
+</a></li>
+{% if request.user.is_staff %}
+<li><a class="dropdown-item" href="{% url 'manage_returns' %}">
+    <i class="fas fa-undo me-2 text-muted"></i>Returns
+</a></li>
+<li><a class="dropdown-item" href="{% url 'sales_report' %}">
+    <i class="fas fa-chart-line me-2 text-muted"></i>Sales Report
+</a></li>
+{% endif %}
+{% endif %}
+{% endif %}
+                    <li><a class="dropdown-item" href="{% url 'wishlist' %}"><i class="far fa-heart me-2 text-muted"></i>Wishlist</a></li>
+                    <li><a class="dropdown-item" href="{% url 'my_orders' %}"><i class="fas fa-box me-2 text-muted"></i>My Orders</a></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><a class="dropdown-item" href="{% url 'logout' %}" style="color:#e53e3e;"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+            <!-- Dark Mode Toggle -->
+<button id="darkToggle" onclick="toggleDark()"
+        style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:1rem;transition:0.2s;color:var(--text);"
+        title="Toggle Dark Mode">
+    🌙
+</button>
+</button>
+<!-- ✅ இங்க add பண்ணு -->
+<button id="installBtn" onclick="installApp()"
+        style="display:none;background:var(--black);color:white;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:'Inter',sans-serif;align-items:center;gap:6px;">
+    📲 Install App
+</button>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn-nav">Login</a>
+            <a href="{% url 'register' %}" class="btn-nav-filled">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!-- MESSAGES -->
+{% if messages %}
+<div class="toast-container">
+    {% for message in messages %}
+    <div class="toast show align-items-center border-0 mb-2"
+         style="background:{% if message.tags == 'error' %}#fff5f5;border:1px solid #fed7d7 !important;{% else %}#f0fff4;border:1px solid #c6f6d5 !important;{% endif %}border-radius:10px !important;"
+         role="alert">
+        <div class="d-flex">
+            <div class="toast-body" style="font-size:0.88rem;font-weight:500;color:{% if message.tags == 'error' %}#e53e3e{% else %}#276749{% endif %};">
+                {{ message }}
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" style="font-size:0.7rem;"></button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="fade-in">
+    {% block content %}{% endblock %}
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div style="font-size:1.3rem;font-weight:700;color:var(--black);margin-bottom:10px;">Shop.</div>
+                <p style="font-size:0.88rem;color:var(--gray);line-height:1.7;">santhosama vaanga porula vangittu ponga</p>
+            </div>
+            <div class="col-md-2 mb-4">
+                <h6>Shop</h6>
+                <a href="{% url 'home' %}">Home</a>
+                <a href="{% url 'search' %}">Products</a>
+                <a href="{% url 'cart' %}">Cart</a>
+            </div>
+            <div class="col-md-2 mb-4">
+                <h6>Account</h6>
+                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'register' %}">Register</a>
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'wishlist' %}">Wishlist</a>
+                {% endif %}
+            </div>
+            <div class="col-md-4 mb-4">
+                <h6>Contact</h6>
+                <p style="font-size:0.88rem;color:var(--gray);margin-bottom:6px;">santhoshkumarv09042005@gmail.com</p>
+                <p style="font-size:0.88rem;color:var(--gray);">+91 6374354152</p>
+            </div>
+        </div>
+        <!-- Newsletter -->
+<div class="col-md-4 mb-4">
+    <h6>Newsletter</h6>
+    <p style="font-size:0.88rem;color:var(--gray);margin-bottom:12px;">
+        Get exclusive deals & offers!
+    </p>
+    <form method="post" action="{% url 'newsletter_subscribe' %}" style="display:flex;gap:6px;">
+        {% csrf_token %}
+        <input type="email" name="email" required
+               placeholder="your@email.com"
+               style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);font-family:'Inter',sans-serif;font-size:0.85rem;outline:none;">
+        <button type="submit"
+                style="background:var(--black);color:white;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:'Inter',sans-serif;white-space:nowrap;transition:0.2s;"
+                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            Subscribe
+        </button>
+    </form>
+</div>
+        <div class="footer-bottom">
+            <span>© 2026 Shop. All rights reserved.</span>
+            <span>Made with sandy ♥</span>
+        </div>
+    </div>
+</footer>
+
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <i class="fas fa-arrow-up"></i>
+</button>
+</body>
+</html>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    window.addEventListener('scroll', () => {
+        document.getElementById('scrollTop').style.display = window.scrollY > 400 ? 'flex' : 'none';
+    });
+    setTimeout(() => {
+        document.querySelectorAll('.toast').forEach(t => new bootstrap.Toast(t, {delay: 4000}).hide());
+    }, 4000);
+</script>
+{% block extra_js %}
+<script>
+// Dark Mode
+function toggleDark() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('darkToggle').textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('darkToggle');
+    if (btn) btn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+});
+
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/service_worker.js')
+            .then(reg => console.log('SW registered'))
+            .catch(err => console.log('SW error:', err));
+    });
+}
+
+// Install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'flex';
+});
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(result => {
+            deferredPrompt = null;
+            document.getElementById('installBtn').style.display = 'none';
+        });
+    }
+}
+{% endblock %}
+</script>
+

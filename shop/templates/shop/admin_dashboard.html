@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="section-title">Dashboard</h2>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
+                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Products</div>
+                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_products }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
+                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Reviews</div>
+                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_reviews }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
+                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Wishlists</div>
+                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_wishlists }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
+                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Users</div>
+                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_users }}</div>
+            </div>
+        </div>
+    </div>
+    <!-- Quick Actions -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;">
+    <a href="{% url 'manage_products' %}" class="btn-primary-min" style="padding:10px 20px;">
+        📦 Manage Products
+    </a>
+    <a href="{% url 'add_product' %}" class="btn-outline-min" style="padding:10px 20px;">
+        ➕ Add Product
+    </a>
+    <a href="{% url 'manage_orders' %}" class="btn-outline-min" style="padding:10px 20px;">
+    📋 Manage Orders
+</a>
+<a href="{% url 'manage_returns' %}" class="btn-outline-min" style="padding:10px 20px;">
+    🔄 Returns
+</a>
+<a href="{% url 'sales_report' %}" class="btn-outline-min" style="padding:10px 20px;">
+    📊 Sales Report
+</a>
+<a href="{% url 'manage_newsletter' %}" class="btn-outline-min" style="padding:10px 20px;">
+    📧 Newsletter
+</a>
+</div>
+
+    <div class="row g-4 mb-4">
+        <!-- Top Rated -->
+        <div class="col-lg-6">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Top Rated Products</h6>
+                {% for product in top_products %}
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.8rem;font-weight:700;color:var(--gray);width:18px;">{{ forloop.counter }}</span>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:0.9rem;">{{ product.name }}</div>
+                        <div style="font-size:0.78rem;color:var(--gray);">{{ product.review_count }} reviews</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700;font-size:0.9rem;">{{ product.avg_rating|floatformat:1 }} ★</div>
+                        <div style="font-size:0.78rem;color:var(--gray);">₹{{ product.price }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color:var(--gray);font-size:0.9rem;text-align:center;padding:20px 0;">No data yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- Stock Alerts -->
+{% if out_of_stock or low_stock %}
+<div style="margin-bottom:28px;">
+    <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:14px;">
+        ⚠️ Stock Alerts
+    </h6>
+    <div class="row g-3">
+
+        {% if out_of_stock %}
+        <div class="col-lg-6">
+            <div style="background:white;border:1px solid #fed7d7;border-radius:12px;padding:20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <div style="width:10px;height:10px;border-radius:50%;background:#e53e3e;"></div>
+                    <span style="font-weight:700;font-size:0.85rem;color:#e53e3e;">Out of Stock ({{ out_of_stock.count }})</span>
+                </div>
+                {% for product in out_of_stock %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #fff5f5;">
+                    <span style="font-size:0.88rem;font-weight:600;">{{ product.name }}</span>
+                    <span style="background:#fff5f5;color:#e53e3e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">0 left</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if low_stock %}
+        <div class="col-lg-6">
+            <div style="background:white;border:1px solid #fef3c7;border-radius:12px;padding:20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                    <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+                    <span style="font-weight:700;font-size:0.85rem;color:#92400e;">Low Stock ({{ low_stock.count }})</span>
+                </div>
+                {% for product in low_stock %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #fffbeb;">
+                    <span style="font-size:0.88rem;font-weight:600;">{{ product.name }}</span>
+                    <span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">{{ product.stock }} left</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endif %}
+
+        <!-- Most Wishlisted -->
+        <div class="col-lg-6">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
+                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Most Wishlisted</h6>
+                {% for product in most_wishlisted %}
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.8rem;font-weight:700;color:var(--gray);width:18px;">{{ forloop.counter }}</span>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:0.9rem;">{{ product.name }}</div>
+                        <div style="font-size:0.78rem;color:var(--gray);">{{ product.category }}</div>
+                    </div>
+                    <div style="font-weight:700;font-size:0.9rem;">{{ product.wishlist_count }} ♡</div>
+                </div>
+                {% empty %}
+                <p style="color:var(--gray);font-size:0.9rem;text-align:center;padding:20px 0;">No data yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Distribution -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
+        <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Rating Distribution</h6>
+        {% for rd in rating_distribution %}
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+            <span style="width:40px;font-size:0.85rem;font-weight:600;text-align:right;">{{ rd.rating }} ★</span>
+            <div style="flex:1;background:var(--gray-light);border-radius:4px;height:10px;overflow:hidden;">
+                <div style="height:100%;background:var(--black);border-radius:4px;width:{{ rd.count }}0%;transition:width 0.8s ease;"></div>
+            </div>
+            <span style="width:24px;font-size:0.85rem;font-weight:700;color:var(--black);">{{ rd.count }}</span>
+        </div>
+        {% empty %}
+        <p style="color:var(--gray);font-size:0.9rem;">No data yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Reviews -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
+        <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Recent Reviews</h6>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--black);">
+                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">User</th>
+                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Product</th>
+                        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Rating</th>
+                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Comment</th>
+                        <th style="padding:10px 12px;text-align:right;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in recent_reviews %}
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:12px;font-weight:600;">{{ review.user.username }}</td>
+                        <td style="padding:12px;color:var(--gray-dark);">{{ review.product.name }}</td>
+                        <td style="padding:12px;text-align:center;font-weight:700;">{{ review.rating }} ★</td>
+                        <td style="padding:12px;color:var(--gray);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ review.comment }}</td>
+                        <td style="padding:12px;text-align:right;color:var(--gray);">{{ review.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="padding:28px;text-align:center;color:var(--gray);">No reviews yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

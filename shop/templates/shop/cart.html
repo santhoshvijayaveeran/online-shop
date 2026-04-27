@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="section-title">Cart</h2>
+
+    {% if cart_items %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            {% for item in cart_items %}
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+                {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;">
+                {% else %}
+                <div style="width:80px;height:80px;background:var(--gray-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">🛍</div>
+                {% endif %}
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">{{ item.product.name }}</div>
+                    {% if item.variant %}
+<div style="font-size:0.75rem;color:var(--gray);margin-top:2px;">
+    {% if item.variant.size %}Size: {{ item.variant.size }}{% endif %}
+    {% if item.variant.color %} · Color: {{ item.variant.color }}{% endif %}
+</div>
+{% endif %}
+{% with discount=item.get_bulk_discount %}
+{% if discount %}
+<div style="background:#f0fff4;color:#276749;padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:700;margin-top:4px;display:inline-block;">
+    {{ discount.discount_percentage }}% bulk discount applied!
+</div>
+{% endif %}
+{% endwith %}
+                    <div style="font-weight:700;font-size:1rem;color:var(--black);margin-bottom:10px;">₹{{ item.product.price }}</div>
+                    <form method="post" action="{% url 'update_cart' item.id %}" style="display:flex;align-items:center;gap:8px;">
+                        {% csrf_token %}
+                        <button type="button" onclick="changeQty(this,-1)" style="width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:0.9rem;font-weight:700;">−</button>
+                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1"
+                               style="width:44px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:4px;font-family:'Inter',sans-serif;font-weight:600;font-size:0.9rem;">
+                        <button type="button" onclick="changeQty(this,1)" style="width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:0.9rem;font-weight:700;">+</button>
+                        <button type="submit" class="btn-outline-min" style="padding:5px 12px;font-size:0.78rem;">Update</button>
+                    </form>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:700;font-size:1.05rem;margin-bottom:10px;">₹{{ item.get_subtotal }}</div>
+                    <form method="post" action="{% url 'remove_from_cart' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit" style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:0.82rem;transition:0.2s;"
+                                onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--gray)'">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-lg-4">
+            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;position:sticky;top:80px;">
+                <h6 style="font-weight:700;margin-bottom:18px;">Order Summary</h6>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:0.9rem;">
+                    <span style="color:var(--gray);">Subtotal</span>
+                    <span style="font-weight:600;">₹{{ total }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.9rem;">
+                    <span style="color:var(--gray);">Shipping</span>
+                    <span style="font-weight:600;color:#276749;">Free</span>
+                </div>
+                <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;margin-bottom:20px;">
+                    <span style="font-weight:700;">Total</span>
+                    <span style="font-weight:800;font-size:1.2rem;">₹{{ total }}</span>
+                </div>
+                <a href="{% url 'checkout' %}" class="btn-primary-min" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
+    Proceed to Checkout
+</a>
+                <a href="{% url 'home' %}" style="display:block;text-align:center;font-size:0.85rem;color:var(--gray);text-decoration:none;margin-top:8px;"
+                   onmouseover="this.style.color='var(--black)'" onmouseout="this.style.color='var(--gray)'">
+                    ← Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:80px 20px;">
+        <div style="font-size:3.5rem;margin-bottom:16px;">🛍</div>
+        <h4 style="font-weight:700;margin-bottom:8px;">Your cart is empty</h4>
+        <p style="color:var(--gray);margin-bottom:24px;font-size:0.9rem;">Add some products to get started.</p>
+        <a href="{% url 'home' %}" class="btn-primary-min" style="padding:11px 28px;">Browse Products</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function changeQty(btn, delta) {
+    const input = btn.parentElement.querySelector('input[name="quantity"]');
+    input.value = Math.max(1, parseInt(input.value) + delta);
+}
+</script>
+{% endblock %}
