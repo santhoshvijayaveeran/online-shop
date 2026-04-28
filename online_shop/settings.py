@@ -84,33 +84,13 @@ DATABASES = {
         'PASSWORD': 'ghrsv0WprZL23hna3iPWX6qpguPybYIuadpg-d7njpj4vikkc73bajk10-a',
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': '5432',
-    }
-}
+    
 
-import urllib.parse
-
-raw_url = os.environ.get('DATABASE_URL', '')
-
-if raw_url:
-    result = urllib.parse.urlparse(raw_url)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': result.path[1:],
-            'USER': result.username,
-            'PASSWORD': result.password,
-            'HOST': result.hostname,
-            'PORT': result.port or 5432,
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
-    }
-
+   
+}
 # --------------------------------------------------
 # Password Validation
 # --------------------------------------------------
