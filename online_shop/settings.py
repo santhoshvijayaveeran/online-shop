@@ -76,7 +76,17 @@ WSGI_APPLICATION = 'online_shop.wsgi.application'
 # --------------------------------------------------
 # Database
 # --------------------------------------------------
-# Database
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'shop_dtik',
+        'USER': 'santhosh',
+        'PASSWORD': 'ghrsv0WprZL23hna3iPWX6qpguPybYIuadpg-d7njpj4vikkc73bajk10-a',
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': '5432',
+    }
+}
+
 import urllib.parse
 
 raw_url = os.environ.get('DATABASE_URL', '')
@@ -100,6 +110,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
 # --------------------------------------------------
 # Password Validation
 # --------------------------------------------------
