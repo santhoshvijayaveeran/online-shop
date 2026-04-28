@@ -8,6 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import dj_database_url
+import urllib.parse
 
 
 # --------------------------------------------------
@@ -75,8 +76,7 @@ WSGI_APPLICATION = 'online_shop.wsgi.application'
 # --------------------------------------------------
 # Database
 # --------------------------------------------------
-import dj_database_url
-import urllib.parse
+
 
 database_url = os.environ.get('DATABASE_URL', '')
 DATABASES = {
@@ -88,6 +88,29 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+raw_url = os.environ.get('DATABASE_URL', '')
+
+if raw_url:
+    result = urllib.parse.urlparse(raw_url)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': result.path[1:],
+            'USER': result.username,
+            'PASSWORD': result.password,
+            'HOST': result.hostname,
+            'PORT': result.port or 5432,
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 # --------------------------------------------------
 # Password Validation
 # --------------------------------------------------
