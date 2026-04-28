@@ -75,16 +75,19 @@ WSGI_APPLICATION = 'online_shop.wsgi.application'
 # --------------------------------------------------
 # Database
 # --------------------------------------------------
+import dj_database_url
+import urllib.parse
 
-
+database_url = os.environ.get('DATABASE_URL', '')
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+    'default': dj_database_url.parse(
+        database_url,
         conn_max_age=600
-    )
+    ) if database_url else {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
-
-
 # --------------------------------------------------
 # Password Validation
 # --------------------------------------------------
