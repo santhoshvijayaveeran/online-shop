@@ -35,12 +35,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles',  # இது ஒரே ஒரு தடவை மட்டும்!
+    'cloudinary_storage',           # இது staticfiles கீழே வரணும்
     'cloudinary',
-
-    # Custom Apps
     'shop',
 ]
 
