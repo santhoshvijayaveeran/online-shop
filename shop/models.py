@@ -1,10 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.text import slugify
 
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -12,13 +19,26 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='products/', null=True, blank=True)
-    stock = models.IntegerField(default=0)                    # ← Add
-    low_stock_threshold = models.IntegerField(default=5)      # ← Add
-    is_active = models.BooleanField(default=True)             # ← Add
+    stock = models.IntegerField(default=0)
+    low_stock_threshold = models.IntegerField(default=5)
+    is_active = models.BooleanField(default=True)
+    meta_description = models.CharField(max_length=160, blank=True)  # SEO
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('product_detail', kwargs={'slug': self.slug})
 
     def __str__(self):
         return self.name
@@ -53,9 +73,26 @@ class Cart(models.Model):
         return sum(item.quantity for item in self.cartitem_set.all())
 
 
+class ProductVariant(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='variants')
+    size = models.CharField(max_length=20, blank=True)
+    color = models.CharField(max_length=30, blank=True)
+    stock = models.IntegerField(default=0)
+    price_extra = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.product.name} — {self.size} {self.color}"
+
+    def get_final_price(self):
+        return self.product.price + self.price_extra
+
+
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(
+        ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
@@ -67,24 +104,17 @@ class CartItem(models.Model):
         else:
             base_price = self.product.price
 
-        # Intha lines ellam ippo function-ku ulla 4 spaces thalli irukanum
-        # Bulk discount check
-        bulk = self.product.bulk_discounts.filter(
-            min_quantity__lte=self.quantity
-        ).order_by('-min_quantity').first()
-
+        bulk = self.get_bulk_discount()
         if bulk:
             discount = (base_price * bulk.discount_percentage) / 100
             base_price = base_price - discount
 
-        # Final-ah return statement-um function-ku ulla irukanum
         return round(base_price * self.quantity, 2)
 
-
-def get_bulk_discount(self):
-    return self.product.bulk_discounts.filter(
-        min_quantity__lte=self.quantity
-    ).order_by('-min_quantity').first()
+    def get_bulk_discount(self):
+        return self.product.bulk_discounts.filter(
+            min_quantity__lte=self.quantity
+        ).order_by('-min_quantity').first()
 
 
 class Order(models.Model):
@@ -99,11 +129,8 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending')
-    total_price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_length=20, choices=STATUS_CHOICES, default='pending')
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tracking_id = models.CharField(max_length=50, blank=True)
     estimated_delivery = models.DateField(null=True, blank=True)
     shipping_address = models.TextField(blank=True)
@@ -133,14 +160,8 @@ class Order(models.Model):
             ('out_for_delivery', 'Out for Delivery', 'fas fa-truck'),
             ('delivered', 'Delivered', 'fas fa-home'),
         ]
-        status_order = [
-            'pending',
-            'processing',
-            'shipped',
-            'out_for_delivery',
-            'delivered']
-        current_index = status_order.index(
-            self.status) if self.status in status_order else -1
+        status_order = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered']
+        current_index = status_order.index(self.status) if self.status in status_order else -1
         result = []
         for i, (status, label, icon) in enumerate(steps):
             if i < current_index:
@@ -180,15 +201,11 @@ class Wishlist(models.Model):
 
 class Review(models.Model):
     product = models.ForeignKey(
-        Product,
-        on_delete=models.CASCADE,
-        related_name='reviews')
+        Product, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rating = models.IntegerField(
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(5)])
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField()
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -204,18 +221,12 @@ class Payment(models.Model):
         ('paid', 'Paid'),
         ('failed', 'Failed'),
     ]
-    order = models.OneToOneField(
-        Order,
-        on_delete=models.CASCADE,
-        related_name='payment')
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
     razorpay_order_id = models.CharField(max_length=100)
     razorpay_payment_id = models.CharField(max_length=100, blank=True)
     razorpay_signature = models.CharField(max_length=200, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='created')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -236,17 +247,11 @@ class ReturnRequest(models.Model):
         ('size_issue', 'Size/Fit Issue'),
         ('other', 'Other'),
     ]
-    order = models.ForeignKey(
-        Order,
-        on_delete=models.CASCADE,
-        related_name='returns')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='returns')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reason = models.CharField(max_length=50, choices=REASON_CHOICES)
     description = models.TextField(blank=True)
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -272,25 +277,6 @@ class Profile(models.Model):
         return None
 
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    address = models.TextField(blank=True)
-    phone = models.CharField(max_length=15, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    state = models.CharField(max_length=100, blank=True)
-    pincode = models.CharField(max_length=10, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
-    bio = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.user.username
-
-    def get_avatar_url(self):
-        if self.avatar:
-            return self.avatar.url
-        return None
-
-
 class Coupon(models.Model):
     DISCOUNT_TYPE_CHOICES = [
         ('percentage', 'Percentage'),
@@ -298,36 +284,9 @@ class Coupon(models.Model):
     ]
     code = models.CharField(max_length=20, unique=True)
     discount_type = models.CharField(
-        max_length=20,
-        choices=DISCOUNT_TYPE_CHOICES,
-        default='percentage')
+        max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='percentage')
     discount_value = models.DecimalField(max_digits=10, decimal_places=2)
-    min_order_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
-    max_uses = models.IntegerField(default=100)
-    used_count = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    valid_from = models.DateTimeField()
-    valid_to = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.code
-
-
-class Coupon(models.Model):
-    DISCOUNT_TYPE_CHOICES = [
-        ('percentage', 'Percentage'),
-        ('fixed', 'Fixed Amount'),
-    ]
-    code = models.CharField(max_length=20, unique=True)
-    discount_type = models.CharField(
-        max_length=20,
-        choices=DISCOUNT_TYPE_CHOICES,
-        default='percentage')
-    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
-    min_order_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+    min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     max_uses = models.IntegerField(default=100)
     used_count = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -365,43 +324,6 @@ class CouponUsage(models.Model):
         return f"{self.user.username} used {self.coupon.code}"
 
 
-class ProductVariant(models.Model):
-    product = models.ForeignKey(
-        Product,
-        on_delete=models.CASCADE,
-        related_name='variants')
-    size = models.CharField(max_length=20, blank=True)
-    color = models.CharField(max_length=30, blank=True)
-    stock = models.IntegerField(default=0)
-    price_extra = models.DecimalField(
-        max_digits=6, decimal_places=2, default=0)
-
-    def __str__(self):
-        return f"{self.product.name} — {self.size} {self.color}"
-
-    def get_final_price(self):
-        return self.product.price + self.price_extra
-
-
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    variant = models.ForeignKey(
-        'ProductVariant',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
-    quantity = models.IntegerField(default=1)
-
-    def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
-
-    def get_subtotal(self):
-        if self.variant:
-            return self.variant.get_final_price() * self.quantity
-        return self.product.price * self.quantity
-
-
 class RecentlyViewed(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -417,17 +339,12 @@ class RecentlyViewed(models.Model):
 
 class BulkDiscount(models.Model):
     product = models.ForeignKey(
-        Product,
-        on_delete=models.CASCADE,
-        related_name='bulk_discounts')
+        Product, on_delete=models.CASCADE, related_name='bulk_discounts')
     min_quantity = models.IntegerField()
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):
-        return f"{
-            self.product.name} — Buy {
-            self.min_quantity}+ get {
-            self.discount_percentage}% off"
+        return f"{self.product.name} — Buy {self.min_quantity}+ get {self.discount_percentage}% off"
 
     class Meta:
         ordering = ['min_quantity']
@@ -444,6 +361,7 @@ class StockNotification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — notify for {self.product.name}"
+
 
 class Question(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='questions')
@@ -464,19 +382,6 @@ class Answer(models.Model):
     def __str__(self):
         return f"Answer to: {self.question.question[:50]}"
 
-class Review(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
-    comment = models.TextField()
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True)  # ← Add
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'product')
-
-    def __str__(self):
-        return f"{self.user.username} - {self.product.name} ({self.rating}★)"
 
 class Newsletter(models.Model):
     email = models.EmailField(unique=True)

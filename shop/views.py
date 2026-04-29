@@ -17,7 +17,6 @@ from .email_utils import (
     send_review_email,
     send_order_confirmation_email
 )
-
 from .models import (
     Category, Product, ProductVariant, Review, Wishlist, Cart, CartItem,
     Order, OrderItem, Payment, ReturnRequest,
@@ -30,6 +29,17 @@ from .email_utils import (
     send_review_email,
     send_order_confirmation_email
 )
+from django.db.models import Q, Avg
+from django.http import JsonResponse
+from django.db.models import Sum, Count, Avg
+from django.db.models.functions import TruncDay, TruncMonth
+import json
+import random
+import time
+from django.core.mail import send_mail
+from .rate_limit import is_rate_limited, get_client_ip, get_remaining_time
+
+
 
 # Razorpay client
 razorpay_client = razorpay.Client(
@@ -119,20 +129,7 @@ def cart_view(request):
 
 
 # ---------------- LOGIN ----------------
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            messages.success(request, f'Welcome back, {user.username}!')
-            return redirect('home')
-        else:
-            messages.error(request, 'Invalid username or password.')
-    return render(request, 'shop/login.html')
+
 
 
 # ---------------- LOGOUT ----------------
@@ -167,29 +164,68 @@ def register_view(request):
 
 
 # ---------------- SEARCH ----------------
-def search_view(request):
-    query = request.GET.get('q', '')
-    category = request.GET.get('category', '')
+def search(request):
+    query = request.GET.get('q', '').strip()
+    category_id = request.GET.get('category', '')
     min_price = request.GET.get('min_price', '')
     max_price = request.GET.get('max_price', '')
-    products = Product.objects.all()
+    sort = request.GET.get('sort', '')
+
+    products = Product.objects.filter(is_active=True)
+
     if query:
-        products = products.filter(name__icontains=query)
-    if category:
-        products = products.filter(category__name__icontains=category)
+        products = products.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(category__name__icontains=query)
+        )
+    if category_id:
+        products = products.filter(category_id=category_id)
     if min_price:
         products = products.filter(price__gte=min_price)
     if max_price:
         products = products.filter(price__lte=max_price)
-    categories = Product.objects.values_list('category__name', flat=True).distinct()
-    return render(request, 'shop/search.html', {
+    if sort == 'price_low':
+        products = products.order_by('price')
+    elif sort == 'price_high':
+        products = products.order_by('-price')
+    elif sort == 'newest':
+        products = products.order_by('-id')
+    elif sort == 'popular':
+        products = products.annotate(avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
+
+    categories = Category.objects.all()
+    context = {
         'products': products,
         'query': query,
-        'category': category,
+        'categories': categories,
+        'selected_category': category_id,
         'min_price': min_price,
         'max_price': max_price,
-        'categories': categories,
-    })
+        'sort': sort,
+        'result_count': products.count(),
+    }
+    return render(request, 'shop/search.html', context)
+
+
+def search_autocomplete(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    products = Product.objects.filter(
+        is_active=True, name__icontains=query
+    ).values('id', 'name', 'price')[:8]
+    categories = Category.objects.filter(
+        name__icontains=query
+    ).values('id', 'name')[:3]
+    return JsonResponse({'products': list(products), 'categories': list(categories)})
+
+
+def search_suggestions(request):
+    popular = Product.objects.filter(
+        is_active=True
+    ).values_list('name', flat=True)[:6]
+    return JsonResponse({'suggestions': list(popular)})
 
 
 # ---------------- WISHLIST ----------------
@@ -330,37 +366,129 @@ def remove_from_cart(request, item_id):
 # ---------------- ADMIN DASHBOARD ----------------
 @staff_member_required
 def admin_dashboard(request):
-    total_products = Product.objects.count()
-    total_reviews = Review.objects.count()
-    total_wishlists = Wishlist.objects.count()
-    total_users = User.objects.count()
-    out_of_stock = Product.objects.filter(stock=0)
-    low_stock = Product.objects.filter(stock__gt=0, stock__lte=5)
-    top_products = Product.objects.annotate(
-        avg_rating=Avg('reviews__rating'),
-        review_count=Count('reviews')
-    ).filter(review_count__gt=0).order_by('-avg_rating')[:5]
-    most_wishlisted = Product.objects.annotate(
-        wishlist_count=Count('wishlist')
-    ).order_by('-wishlist_count')[:5]
-    recent_reviews = Review.objects.select_related(
-        'user', 'product'
+    today = timezone.now()
+    last_30_days = today - timedelta(days=30)
+    last_7_days = today - timedelta(days=7)
+ 
+    # ── Summary Cards ──
+    total_revenue = Order.objects.filter(
+        status='delivered'
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+ 
+    total_orders = Order.objects.count()
+ 
+    pending_orders = Order.objects.filter(status='pending').count()
+ 
+    total_products = Product.objects.filter(is_active=True).count()
+ 
+    monthly_revenue = Order.objects.filter(
+        status='delivered',
+        created_at__gte=last_30_days
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+ 
+    # ── Daily Revenue Chart (last 7 days) ──
+    daily_revenue = Order.objects.filter(
+        created_at__gte=last_7_days,
+        status__in=['delivered', 'processing', 'shipped']
+    ).annotate(
+        day=TruncDay('created_at')
+    ).values('day').annotate(
+        revenue=Sum('total_price'),
+        orders=Count('id')
+    ).order_by('day')
+ 
+    chart_labels = []
+    chart_revenue = []
+    chart_orders = []
+ 
+    for i in range(7):
+        day = (today - timedelta(days=6 - i)).date()
+        chart_labels.append(day.strftime('%d %b'))
+        day_data = next(
+            (d for d in daily_revenue if d['day'].date() == day), None
+        )
+        chart_revenue.append(float(day_data['revenue']) if day_data else 0)
+        chart_orders.append(day_data['orders'] if day_data else 0)
+ 
+    # ── Monthly Revenue Chart (last 6 months) ──
+    monthly_data = Order.objects.filter(
+        status='delivered',
+        created_at__gte=today - timedelta(days=180)
+    ).annotate(
+        month=TruncMonth('created_at')
+    ).values('month').annotate(
+        revenue=Sum('total_price')
+    ).order_by('month')
+ 
+    monthly_labels = [d['month'].strftime('%b %Y') for d in monthly_data]
+    monthly_values = [float(d['revenue']) for d in monthly_data]
+ 
+    # ── Top Products ──
+    top_products = OrderItem.objects.values(
+        'product__name'
+    ).annotate(
+        total_sold=Sum('quantity'),
+        revenue=Sum('price')
+    ).order_by('-total_sold')[:5]
+ 
+    top_product_labels = [p['product__name'][:20] for p in top_products]
+    top_product_values = [p['total_sold'] for p in top_products]
+ 
+    # ── Orders by Status ──
+    status_data = Order.objects.values('status').annotate(
+        count=Count('id')
+    )
+    status_labels = [s['status'].title() for s in status_data]
+    status_values = [s['count'] for s in status_data]
+ 
+    # ── Category Sales ──
+    category_sales = OrderItem.objects.values(
+        'product__category__name'
+    ).annotate(
+        total=Sum('quantity')
+    ).order_by('-total')[:5]
+ 
+    cat_labels = [c['product__category__name'] for c in category_sales]
+    cat_values = [c['total'] for c in category_sales]
+ 
+    # ── Recent Orders ──
+    recent_orders = Order.objects.select_related(
+        'user'
     ).order_by('-created_at')[:10]
-    rating_distribution = Review.objects.values('rating').annotate(
-        count=Count('rating')
-    ).order_by('rating')
-    return render(request, 'shop/admin_dashboard.html', {
+ 
+    # ── Low Stock Products ──
+    low_stock = Product.objects.filter(
+        stock__lte=5, is_active=True
+    ).order_by('stock')[:5]
+ 
+    context = {
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
         'total_products': total_products,
-        'total_reviews': total_reviews,
-        'total_wishlists': total_wishlists,
-        'total_users': total_users,
-        'out_of_stock': out_of_stock,
+        'monthly_revenue': monthly_revenue,
+ 
+        'chart_labels': json.dumps(chart_labels),
+        'chart_revenue': json.dumps(chart_revenue),
+        'chart_orders': json.dumps(chart_orders),
+ 
+        'monthly_labels': json.dumps(monthly_labels),
+        'monthly_values': json.dumps(monthly_values),
+ 
+        'top_product_labels': json.dumps(top_product_labels),
+        'top_product_values': json.dumps(top_product_values),
+ 
+        'status_labels': json.dumps(status_labels),
+        'status_values': json.dumps(status_values),
+ 
+        'cat_labels': json.dumps(cat_labels),
+        'cat_values': json.dumps(cat_values),
+ 
+        'recent_orders': recent_orders,
         'low_stock': low_stock,
-        'top_products': top_products,
-        'most_wishlisted': most_wishlisted,
-        'recent_reviews': recent_reviews,
-        'rating_distribution': rating_distribution,
-    })
+    }
+    return render(request, 'shop/admin_dashboard.html', context)
+
 
 
 # ---------------- CHECKOUT ----------------
@@ -1166,7 +1294,7 @@ def newsletter_subscribe(request):
             from django.core.mail import send_mail
             try:
                 send_mail(
-                    subject='🎉 Welcome to Our Newsletter!',
+                    subject='Welcome to Our Newsletter!',
                     message=f'Hi!\n\nThank you for subscribing to our newsletter.\nYou\'ll receive the latest deals and offers.\n\nUnsubscribe anytime at our website.',
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[email],
@@ -1229,3 +1357,157 @@ def manage_newsletter(request):
         'subscribers': subscribers,
         'total': subscribers.count(),
     })
+
+
+# ── OTP Store (in-memory) ──
+_otp_store = {}
+
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+
+def send_otp_email(email, otp):
+    send_mail(
+        subject='Your Login OTP - Online Shop',
+        message=f'''
+Your OTP for login is: {otp}
+
+This OTP is valid for 5 minutes.
+Do not share this with anyone.
+
+- Online Shop Team
+        ''',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )
+
+
+# ── Login View with Rate Limiting ──
+def user_login(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        ip = get_client_ip(request)
+
+        # Rate limiting check
+        rate_key = f'login:{ip}:{username}'
+        if is_rate_limited(rate_key, max_attempts=5, window=300):
+            remaining = get_remaining_time(rate_key)
+            minutes = remaining // 60
+            seconds = remaining % 60
+            messages.error(
+                request,
+                f'Too many login attempts! Try again in {minutes}m {seconds}s.'
+            )
+            return render(request, 'shop/login.html', {'locked': True})
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            # Admin-க்கு 2FA
+            if user.is_staff:
+                otp = generate_otp()
+                _otp_store[username] = {
+                    'otp': otp,
+                    'expires': time.time() + 300,
+                    'user_id': user.id,
+                }
+                try:
+                    send_otp_email(user.email, otp)
+                    request.session['pending_2fa_user'] = username
+                    messages.info(request, f'OTP sent to {user.email[:3]}***@{user.email.split("@")[1]}')
+                    return redirect('verify_2fa')
+                except Exception:
+                    # Email fail-ஆனா console-ல் print பண்ணு (dev mode)
+                    print(f'[DEV] OTP for {username}: {otp}')
+                    request.session['pending_2fa_user'] = username
+                    messages.warning(request, f'[DEV MODE] OTP: {otp}')
+                    return redirect('verify_2fa')
+            else:
+                # Normal user — direct login
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.username}!')
+                next_url = request.GET.get('next', 'home')
+                return redirect(next_url)
+        else:
+            messages.error(request, 'Invalid username or password.')
+            return render(request, 'shop/login.html')
+
+    return render(request, 'shop/login.html')
+
+
+# ── 2FA Verify View ──
+def verify_2fa(request):
+    username = request.session.get('pending_2fa_user')
+
+    if not username:
+        return redirect('login')
+
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp', '').strip()
+        ip = get_client_ip(request)
+
+        # OTP rate limiting
+        otp_key = f'otp:{ip}:{username}'
+        if is_rate_limited(otp_key, max_attempts=5, window=300):
+            remaining = get_remaining_time(otp_key)
+            messages.error(request, f'Too many OTP attempts! Wait {remaining}s.')
+            return render(request, 'shop/verify_2fa.html')
+
+        otp_data = _otp_store.get(username)
+
+        if not otp_data:
+            messages.error(request, 'OTP expired. Please login again.')
+            return redirect('login')
+
+        if time.time() > otp_data['expires']:
+            del _otp_store[username]
+            messages.error(request, 'OTP expired! Please login again.')
+            return redirect('login')
+
+        if entered_otp == otp_data['otp']:
+            user = User.objects.get(id=otp_data['user_id'])
+            login(request, user)
+            del _otp_store[username]
+            del request.session['pending_2fa_user']
+            messages.success(request, f'Welcome, {user.username}!')
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, 'Invalid OTP. Try again.')
+
+    return render(request, 'shop/verify_2fa.html')
+
+
+# ── Resend OTP ──
+def resend_otp(request):
+    username = request.session.get('pending_2fa_user')
+    if not username:
+        return redirect('login')
+
+    ip = get_client_ip(request)
+    resend_key = f'resend:{ip}:{username}'
+
+    if is_rate_limited(resend_key, max_attempts=3, window=300):
+        messages.error(request, 'Too many resend attempts! Wait 5 minutes.')
+        return redirect('verify_2fa')
+
+    try:
+        user = User.objects.get(username=username)
+        otp = generate_otp()
+        _otp_store[username] = {
+            'otp': otp,
+            'expires': time.time() + 300,
+            'user_id': user.id,
+        }
+        send_otp_email(user.email, otp)
+        messages.success(request, 'New OTP sent!')
+    except Exception:
+        print(f'[DEV] New OTP for {username}: {_otp_store[username]["otp"]}')
+        messages.warning(request, f'[DEV] OTP resent to console.')
+
+    return redirect('verify_2fa')

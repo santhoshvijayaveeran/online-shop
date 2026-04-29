@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card-min text-center">
+
+                <div style="width:56px;height:56px;background:#111;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                    <i class="fas fa-shield-alt" style="color:white;font-size:1.3rem;"></i>
+                </div>
+
+                <h4 style="font-weight:700;margin-bottom:8px;">Two-Factor Authentication</h4>
+                <p style="color:#888;font-size:0.9rem;margin-bottom:28px;">
+                    உங்கள் email-க்கு 6-digit OTP அனுப்பினோம்.<br>
+                    5 நிமிஷத்தில் enter பண்ணுங்க.
+                </p>
+
+                {% if messages %}
+                {% for message in messages %}
+                <div style="padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.88rem;
+                    {% if message.tags == 'error' %}background:#fff5f5;color:#e53e3e;border:1px solid #fed7d7;
+                    {% elif message.tags == 'warning' %}background:#fffbf0;color:#b7791f;border:1px solid #fbd38d;
+                    {% else %}background:#f0fff4;color:#276749;border:1px solid #c6f6d5;{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <div style="margin-bottom:20px;">
+                        <input
+                            type="text"
+                            name="otp"
+                            maxlength="6"
+                            placeholder="Enter 6-digit OTP"
+                            class="input-min"
+                            style="text-align:center;font-size:1.5rem;font-weight:700;letter-spacing:12px;"
+                            autofocus
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-primary-min" style="width:100%;justify-content:center;padding:12px;">
+                        <i class="fas fa-check" style="font-size:0.85rem;"></i>
+                        Verify OTP
+                    </button>
+                </form>
+
+                <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f0f0f0;">
+                    <form method="POST" action="{% url 'resend_otp' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit"
+                                style="background:none;border:none;color:#888;font-size:0.85rem;cursor:pointer;text-decoration:underline;">
+                            Resend OTP
+                        </button>
+                    </form>
+                    <span style="color:#ddd;margin:0 10px;">|</span>
+                    <a href="{% url 'login' %}" style="color:#888;font-size:0.85rem;text-decoration:none;">
+                        Back to Login
+                    </a>
+                </div>
+
+                <!-- OTP Timer -->
+                <p style="color:#aaa;font-size:0.8rem;margin-top:16px;">
+                    OTP expires in <span id="timer" style="font-weight:600;color:#111;">5:00</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let seconds = 300;
+const timerEl = document.getElementById('timer');
+
+const interval = setInterval(() => {
+    seconds--;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+
+    if (seconds <= 60) timerEl.style.color = '#e53e3e';
+    if (seconds <= 0) {
+        clearInterval(interval);
+        timerEl.textContent = 'Expired';
+        timerEl.style.color = '#e53e3e';
+    }
+}, 1000);
+
+// Auto-submit when 6 digits entered
+document.querySelector('input[name="otp"]').addEventListener('input', function() {
+    if (this.value.length === 6) {
+        this.closest('form').submit();
+    }
+});
+</script>
+{% endblock %}

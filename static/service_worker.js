@@ -1,40 +1,40 @@
 const CACHE_NAME = 'online-shop-v1';
 const urlsToCache = [
     '/',
-    '/static/css/',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    '/static/css/style.css',
+    '/static/js/main.js',
+    '/offline/',
 ];
 
 // Install
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(urlsToCache);
-        })
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
     );
 });
 
 // Fetch
 self.addEventListener('fetch', event => {
     event.respondWith(
-        caches.match(event.request).then(response => {
-            if (response) return response;
-            return fetch(event.request).catch(() => {
-                return caches.match('/');
-            });
-        })
+        caches.match(event.request)
+            .then(response => {
+                if (response) return response;
+                return fetch(event.request).catch(() => {
+                    return caches.match('/offline/');
+                });
+            })
     );
 });
 
-// Activate
+// Activate - old cache clear
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(keys => {
-            return Promise.all(
+        caches.keys().then(keys =>
+            Promise.all(
                 keys.filter(key => key !== CACHE_NAME)
                     .map(key => caches.delete(key))
-            );
-        })
+            )
+        )
     );
 });

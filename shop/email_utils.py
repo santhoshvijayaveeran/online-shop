@@ -5,7 +5,7 @@ from django.conf import settings
 
 def send_welcome_email(user):
     """Sent when a user registers"""
-    subject = '🎉 Welcome to Our Shop!'
+    subject = 'Welcome to Our Shop!'
     message = render_to_string('shop/emails/welcome.html', {
         'username': user.username,
     })

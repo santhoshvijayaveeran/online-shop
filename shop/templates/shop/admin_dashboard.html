@@ -1,192 +1,289 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="container py-5">
-    <h2 class="section-title">Dashboard</h2>
 
-    <!-- Stats -->
-    <div class="row g-3 mb-5">
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;">
+        <div>
+            <h4 style="font-weight:700;margin:0;">Dashboard</h4>
+            <p style="color:#888;font-size:0.88rem;margin:4px 0 0;">Sales overview & analytics</p>
+        </div>
+        <a href="{% url 'manage_orders' %}" class="btn-primary-min">
+            <i class="fas fa-list" style="font-size:0.8rem;"></i> All Orders
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
-                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Products</div>
-                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_products }}</div>
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-size:0.8rem;color:#888;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Total Revenue</p>
+                <h3 style="font-weight:700;margin:0;font-size:1.6rem;">₹{{ total_revenue|floatformat:0 }}</h3>
+                <p style="font-size:0.8rem;color:#38a169;margin:6px 0 0;">
+                    <i class="fas fa-arrow-up" style="font-size:0.7rem;"></i>
+                    ₹{{ monthly_revenue|floatformat:0 }} this month
+                </p>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
-                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Reviews</div>
-                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_reviews }}</div>
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-size:0.8rem;color:#888;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Total Orders</p>
+                <h3 style="font-weight:700;margin:0;font-size:1.6rem;">{{ total_orders }}</h3>
+                <p style="font-size:0.8rem;color:#d69e2e;margin:6px 0 0;">
+                    <i class="fas fa-clock" style="font-size:0.7rem;"></i>
+                    {{ pending_orders }} pending
+                </p>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
-                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Wishlists</div>
-                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_wishlists }}</div>
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-size:0.8rem;color:#888;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Products</p>
+                <h3 style="font-weight:700;margin:0;font-size:1.6rem;">{{ total_products }}</h3>
+                <p style="font-size:0.8rem;color:#e53e3e;margin:6px 0 0;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:0.7rem;"></i>
+                    {{ low_stock|length }} low stock
+                </p>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
-                <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:8px;">Users</div>
-                <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1px;">{{ total_users }}</div>
+            <div style="background:#111;border-radius:12px;padding:20px;">
+                <p style="font-size:0.8rem;color:#888;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Quick Actions</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <a href="{% url 'add_product' %}" style="color:white;text-decoration:none;font-size:0.85rem;font-weight:500;">
+                        <i class="fas fa-plus" style="font-size:0.75rem;margin-right:6px;"></i> Add Product
+                    </a>
+                    <a href="{% url 'manage_orders' %}" style="color:#aaa;text-decoration:none;font-size:0.85rem;">
+                        <i class="fas fa-box" style="font-size:0.75rem;margin-right:6px;"></i> Manage Orders
+                    </a>
+                    <a href="{% url 'sales_report' %}" style="color:#aaa;text-decoration:none;font-size:0.85rem;">
+                        <i class="fas fa-chart-line" style="font-size:0.75rem;margin-right:6px;"></i> Sales Report
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    <!-- Quick Actions -->
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;">
-    <a href="{% url 'manage_products' %}" class="btn-primary-min" style="padding:10px 20px;">
-        📦 Manage Products
-    </a>
-    <a href="{% url 'add_product' %}" class="btn-outline-min" style="padding:10px 20px;">
-        ➕ Add Product
-    </a>
-    <a href="{% url 'manage_orders' %}" class="btn-outline-min" style="padding:10px 20px;">
-    📋 Manage Orders
-</a>
-<a href="{% url 'manage_returns' %}" class="btn-outline-min" style="padding:10px 20px;">
-    🔄 Returns
-</a>
-<a href="{% url 'sales_report' %}" class="btn-outline-min" style="padding:10px 20px;">
-    📊 Sales Report
-</a>
-<a href="{% url 'manage_newsletter' %}" class="btn-outline-min" style="padding:10px 20px;">
-    📧 Newsletter
-</a>
-</div>
 
-    <div class="row g-4 mb-4">
-        <!-- Top Rated -->
-        <div class="col-lg-6">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
-                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Top Rated Products</h6>
-                {% for product in top_products %}
-                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
-                    <span style="font-size:0.8rem;font-weight:700;color:var(--gray);width:18px;">{{ forloop.counter }}</span>
-                    <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.9rem;">{{ product.name }}</div>
-                        <div style="font-size:0.78rem;color:var(--gray);">{{ product.review_count }} reviews</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:700;font-size:0.9rem;">{{ product.avg_rating|floatformat:1 }} ★</div>
-                        <div style="font-size:0.78rem;color:var(--gray);">₹{{ product.price }}</div>
-                    </div>
-                </div>
-                {% empty %}
-                <p style="color:var(--gray);font-size:0.9rem;text-align:center;padding:20px 0;">No data yet.</p>
-                {% endfor %}
+    <!-- Charts Row 1 -->
+    <div class="row g-3 mb-4">
+
+        <!-- Daily Revenue Line Chart -->
+        <div class="col-md-8">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">Revenue — Last 7 Days</p>
+                <canvas id="revenueChart" height="100"></canvas>
             </div>
         </div>
-        <!-- Stock Alerts -->
-{% if out_of_stock or low_stock %}
-<div style="margin-bottom:28px;">
-    <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:14px;">
-        ⚠️ Stock Alerts
-    </h6>
+
+        <!-- Order Status Doughnut -->
+        <div class="col-md-4">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">Order Status</p>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row g-3 mb-4">
+
+        <!-- Monthly Revenue Bar -->
+        <div class="col-md-6">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">Monthly Revenue</p>
+                <canvas id="monthlyChart" height="120"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Products Bar -->
+        <div class="col-md-6">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">Top Products (Units Sold)</p>
+                <canvas id="topProductsChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row -->
     <div class="row g-3">
 
-        {% if out_of_stock %}
-        <div class="col-lg-6">
-            <div style="background:white;border:1px solid #fed7d7;border-radius:12px;padding:20px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                    <div style="width:10px;height:10px;border-radius:50%;background:#e53e3e;"></div>
-                    <span style="font-weight:700;font-size:0.85rem;color:#e53e3e;">Out of Stock ({{ out_of_stock.count }})</span>
+        <!-- Recent Orders -->
+        <div class="col-md-8">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">Recent Orders</p>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #f0f0f0;">
+                                <th style="padding:8px;text-align:left;color:#888;font-weight:500;">Order</th>
+                                <th style="padding:8px;text-align:left;color:#888;font-weight:500;">Customer</th>
+                                <th style="padding:8px;text-align:left;color:#888;font-weight:500;">Amount</th>
+                                <th style="padding:8px;text-align:left;color:#888;font-weight:500;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr style="border-bottom:1px solid #f9f9f9;">
+                                <td style="padding:10px 8px;font-weight:600;">#{{ order.id }}</td>
+                                <td style="padding:10px 8px;">{{ order.user.username }}</td>
+                                <td style="padding:10px 8px;font-weight:600;">₹{{ order.total_price }}</td>
+                                <td style="padding:10px 8px;">
+                                    <span style="padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;
+                                        {% if order.status == 'delivered' %}background:#f0fff4;color:#276749;
+                                        {% elif order.status == 'pending' %}background:#fffbf0;color:#744210;
+                                        {% elif order.status == 'cancelled' %}background:#fff5f5;color:#9b2c2c;
+                                        {% else %}background:#ebf8ff;color:#2b6cb0;{% endif %}">
+                                        {{ order.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" style="padding:20px;text-align:center;color:#888;">No orders yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% for product in out_of_stock %}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #fff5f5;">
-                    <span style="font-size:0.88rem;font-weight:600;">{{ product.name }}</span>
-                    <span style="background:#fff5f5;color:#e53e3e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">0 left</span>
-                </div>
-                {% endfor %}
             </div>
         </div>
-        {% endif %}
 
-        {% if low_stock %}
-        <div class="col-lg-6">
-            <div style="background:white;border:1px solid #fef3c7;border-radius:12px;padding:20px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                    <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
-                    <span style="font-weight:700;font-size:0.85rem;color:#92400e;">Low Stock ({{ low_stock.count }})</span>
-                </div>
+        <!-- Low Stock Alert -->
+        <div class="col-md-4">
+            <div style="background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;">
+                <p style="font-weight:600;margin:0 0 16px;font-size:0.95rem;">
+                    <i class="fas fa-exclamation-triangle" style="color:#e53e3e;font-size:0.85rem;margin-right:6px;"></i>
+                    Low Stock Alert
+                </p>
                 {% for product in low_stock %}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #fffbeb;">
-                    <span style="font-size:0.88rem;font-weight:600;">{{ product.name }}</span>
-                    <span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;">{{ product.stock }} left</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-    </div>
-</div>
-{% endif %}
-
-        <!-- Most Wishlisted -->
-        <div class="col-lg-6">
-            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
-                <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Most Wishlisted</h6>
-                {% for product in most_wishlisted %}
-                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
-                    <span style="font-size:0.8rem;font-weight:700;color:var(--gray);width:18px;">{{ forloop.counter }}</span>
-                    <div style="flex:1;">
-                        <div style="font-weight:600;font-size:0.9rem;">{{ product.name }}</div>
-                        <div style="font-size:0.78rem;color:var(--gray);">{{ product.category }}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f9f9f9;">
+                    <div>
+                        <p style="margin:0;font-size:0.85rem;font-weight:500;">{{ product.name|truncatechars:25 }}</p>
+                        <p style="margin:0;font-size:0.78rem;color:#888;">{{ product.category.name }}</p>
                     </div>
-                    <div style="font-weight:700;font-size:0.9rem;">{{ product.wishlist_count }} ♡</div>
+                    <span style="background:#fff5f5;color:#c53030;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                        {{ product.stock }} left
+                    </span>
                 </div>
                 {% empty %}
-                <p style="color:var(--gray);font-size:0.9rem;text-align:center;padding:20px 0;">No data yet.</p>
+                <p style="color:#888;font-size:0.88rem;text-align:center;padding:20px 0;">All products well stocked!</p>
                 {% endfor %}
             </div>
         </div>
-    </div>
 
-    <!-- Rating Distribution -->
-    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
-        <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Rating Distribution</h6>
-        {% for rd in rating_distribution %}
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-            <span style="width:40px;font-size:0.85rem;font-weight:600;text-align:right;">{{ rd.rating }} ★</span>
-            <div style="flex:1;background:var(--gray-light);border-radius:4px;height:10px;overflow:hidden;">
-                <div style="height:100%;background:var(--black);border-radius:4px;width:{{ rd.count }}0%;transition:width 0.8s ease;"></div>
-            </div>
-            <span style="width:24px;font-size:0.85rem;font-weight:700;color:var(--black);">{{ rd.count }}</span>
-        </div>
-        {% empty %}
-        <p style="color:var(--gray);font-size:0.9rem;">No data yet.</p>
-        {% endfor %}
-    </div>
-
-    <!-- Recent Reviews -->
-    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px;">
-        <h6 style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);margin-bottom:18px;">Recent Reviews</h6>
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
-                <thead>
-                    <tr style="border-bottom:2px solid var(--black);">
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">User</th>
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Product</th>
-                        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Rating</th>
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Comment</th>
-                        <th style="padding:10px 12px;text-align:right;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for review in recent_reviews %}
-                    <tr style="border-bottom:1px solid var(--border);">
-                        <td style="padding:12px;font-weight:600;">{{ review.user.username }}</td>
-                        <td style="padding:12px;color:var(--gray-dark);">{{ review.product.name }}</td>
-                        <td style="padding:12px;text-align:center;font-weight:700;">{{ review.rating }} ★</td>
-                        <td style="padding:12px;color:var(--gray);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ review.comment }}</td>
-                        <td style="padding:12px;text-align:right;color:var(--gray);">{{ review.created_at|date:"M d, Y" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" style="padding:28px;text-align:center;color:var(--gray);">No reviews yet.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartLabels = {{ chart_labels|safe }};
+const chartRevenue = {{ chart_revenue|safe }};
+const chartOrders = {{ chart_orders|safe }};
+const monthlyLabels = {{ monthly_labels|safe }};
+const monthlyValues = {{ monthly_values|safe }};
+const topProductLabels = {{ top_product_labels|safe }};
+const topProductValues = {{ top_product_values|safe }};
+const statusLabels = {{ status_labels|safe }};
+const statusValues = {{ status_values|safe }};
+
+// 1. Daily Revenue Line Chart
+new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+        labels: chartLabels,
+        datasets: [{
+            label: 'Revenue (₹)',
+            data: chartRevenue,
+            borderColor: '#111',
+            backgroundColor: 'rgba(17,17,17,0.05)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#111',
+        }, {
+            label: 'Orders',
+            data: chartOrders,
+            borderColor: '#888',
+            borderWidth: 1.5,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.4,
+            pointRadius: 3,
+            yAxisID: 'y2',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#f5f5f5' } },
+            y2: { beginAtZero: true, position: 'right', grid: { display: false } }
+        }
+    }
+});
+
+// 2. Order Status Doughnut
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: statusLabels,
+        datasets: [{
+            data: statusValues,
+            backgroundColor: ['#111', '#888', '#bbb', '#ddd', '#f0f0f0', '#444'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } }
+    }
+});
+
+// 3. Monthly Revenue Bar
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+        labels: monthlyLabels,
+        datasets: [{
+            label: 'Revenue (₹)',
+            data: monthlyValues,
+            backgroundColor: '#111',
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#f5f5f5' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// 4. Top Products Horizontal Bar
+new Chart(document.getElementById('topProductsChart'), {
+    type: 'bar',
+    data: {
+        labels: topProductLabels,
+        datasets: [{
+            label: 'Units Sold',
+            data: topProductValues,
+            backgroundColor: ['#111', '#444', '#777', '#aaa', '#ddd'],
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { color: '#f5f5f5' } },
+            y: { grid: { display: false } }
+        }
+    }
+});
+</script>
 {% endblock %}

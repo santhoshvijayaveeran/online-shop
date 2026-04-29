@@ -38,7 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',  # இது ஒரே ஒரு தடவை மட்டும்!
     'cloudinary_storage',           # இது staticfiles கீழே வரணும்
     'cloudinary',
+    'django.contrib.sitemaps',
+    'progressive',
     'shop',
+    'pwa',
 ]
 
 MIDDLEWARE = [
@@ -160,3 +163,11 @@ SHIPPING_CHARGE = 49 # below ₹500 = ₹49 # Returns
 RETURN_WINDOW_DAYS = 7 # 7 days return window # Twilio Settings 
 
 
+PROGRESSIVE_APP_NAME = 'Online Shop'
+PROGRESSIVE_APP_THEME_COLOR = '#000000'
+PROGRESSIVE_APP_DISPLAY = 'standalone'
+PROGRESSIVE_APP_START_URL = '/'
+PROGRESSIVE_APP_ICONS = [{'src': '/static/images/logo.png', 'sizes': '160x160'}]
+PROGRESSIVE_SERVICE_WORKER_PATH = BASE_DIR / 'static/js/serviceworker.js'
+
+APPEND_SLASH = False
