@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us — SANZCART{% endblock %}
+
+{% block content %}
+<style>
+    .about-hero {
+        background: var(--sanzcart-bg);
+        padding: 80px 0 100px;
+        text-align: center;
+    }
+    .about-title {
+        font-family: var(--font-heading);
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        margin-bottom: 24px;
+        color: var(--sanzcart-text);
+    }
+    .about-subtitle {
+        font-size: 1.1rem;
+        color: var(--sanzcart-muted);
+        max-width: 600px;
+        margin: 0 auto 40px;
+        line-height: 1.6;
+    }
+    .about-section {
+        padding: 80px 0;
+        background: #fff;
+    }
+    .value-card {
+        background: var(--sanzcart-card);
+        border: 1.5px solid var(--sanzcart-border);
+        border-radius: 14px;
+        padding: 40px;
+        height: 100%;
+        text-align: center;
+        transition: 0.3s;
+    }
+    .value-card:hover {
+        border-color: var(--sanzcart-primary);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .value-icon {
+        width: 70px;
+        height: 70px;
+        background: rgba(230,57,70,0.1);
+        color: var(--sanzcart-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: 0 auto 24px;
+    }
+    .value-title {
+        font-family: var(--font-heading);
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+    .value-desc {
+        color: var(--sanzcart-muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+</style>
+
+<div class="about-hero">
+    <div class="container">
+        <h1 class="about-title">Redefining Your Style</h1>
+        <p class="about-subtitle">At SANZCART, we believe fashion should be an expression of your true self. We curate premium quality materials, modern cuts, and everyday essentials designed for comfort and confidence.</p>
+    </div>
+</div>
+
+<div class="about-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800;">Our Core Values</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-gem"></i></div>
+                    <h3 class="value-title">Premium Quality</h3>
+                    <p class="value-desc">We meticulously source the finest materials to ensure every piece feels luxurious and stands the test of time.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-leaf"></i></div>
+                    <h3 class="value-title">Sustainable Practices</h3>
+                    <p class="value-desc">Committed to reducing our footprint through ethical manufacturing and eco-friendly packaging.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-heart"></i></div>
+                    <h3 class="value-title">Customer First</h3>
+                    <p class="value-desc">Your satisfaction is our priority. Enjoy seamless shopping, fast shipping, and 24/7 dedicated support.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

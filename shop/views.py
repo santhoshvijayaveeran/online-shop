@@ -1,16 +1,25 @@
+import os
+import json
+import random
+import time
+from datetime import timedelta, date
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Sum
+from django.http import JsonResponse
+from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Avg, Count
 from django.contrib.auth.models import User
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from datetime import timedelta, date
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.db.models import Q, Sum, Avg, Count
+from django.db.models.functions import TruncDay, TruncMonth
+from django.core.mail import send_mail
+
 import razorpay
+
 from .email_utils import (
     send_welcome_email,
     send_wishlist_email,
@@ -21,22 +30,8 @@ from .models import (
     Category, Product, ProductVariant, Review, Wishlist, Cart, CartItem,
     Order, OrderItem, Payment, ReturnRequest,
     Profile, Coupon, CouponUsage, RecentlyViewed, BulkDiscount,
-    StockNotification, Question, Answer, Newsletter
+    StockNotification, Question, Answer, Newsletter, PushSubscription
 )
-from .email_utils import (
-    send_welcome_email,
-    send_wishlist_email,
-    send_review_email,
-    send_order_confirmation_email
-)
-from django.db.models import Q, Avg
-from django.http import JsonResponse
-from django.db.models import Sum, Count, Avg
-from django.db.models.functions import TruncDay, TruncMonth
-import json
-import random
-import time
-from django.core.mail import send_mail
 from .rate_limit import is_rate_limited, get_client_ip, get_remaining_time
 
 
@@ -77,6 +72,35 @@ def home(request):
         'categories': categories,
         'recently_viewed': recently_viewed,
     })
+
+
+# ---------------- ABOUT ----------------
+def about(request):
+    return render(request, 'shop/about.html')
+
+
+# ---------------- INFO PAGES ----------------
+def info_page(request, slug):
+    pages = {
+        'faq': {'title': 'Frequently Asked Questions', 'content': '<p>Here you will find answers to the most commonly asked questions about our products, shipping, returns, and more. If you cannot find what you are looking for, please contact our support team.</p><br><strong>How do I track my order?</strong><p>You can track your order by navigating to My Orders or using the Track Order link in the footer.</p><strong>What is your return policy?</strong><p>We offer a 30-day return window for all unused items in their original packaging.</p>'},
+        'privacy-policy': {'title': 'Privacy Policy', 'content': '<p>Your privacy is important to us. This Privacy Policy outlines how SANZCART collects, uses, and protects your personal information when you use our website and services.</p><p>We implement security measures to maintain the safety of your personal information. We do not sell or trade your data to third parties.</p>'},
+        'terms': {'title': 'Terms of Service', 'content': '<p>Welcome to SANZCART. By using our website, you agree to these Terms of Service. Please read them carefully.</p><p>All content included on this site is the property of SANZCART and protected by copyright laws.</p>'},
+        'shipping': {'title': 'Shipping Information', 'content': '<p>We offer standard and expedited shipping options. Standard shipping is free on orders above our designated threshold. Once your order is dispatched, you will receive a tracking number via email.</p>'},
+        'returns': {'title': 'Returns & Exchanges', 'content': '<p>If you are not completely satisfied with your purchase, you may return it within 30 days of receipt. Items must be unworn, unwashed, and have original tags attached.</p>'},
+        'careers': {'title': 'Careers at SANZCART', 'content': '<p>Join our dynamic team and help us redefine fashion and e-commerce. We are always looking for passionate individuals. Currently, we have open positions in marketing, software engineering, and customer support.</p>'},
+    }
+    page = pages.get(slug)
+    if not page:
+        return redirect('home')
+    return render(request, 'shop/info_page.html', {'page': page})
+
+
+# ---------------- CONTACT US ----------------
+def contact_us(request):
+    if request.method == 'POST':
+        messages.success(request, 'Your message has been sent successfully. Our support team will get back to you shortly.')
+        return redirect('contact_us')
+    return render(request, 'shop/contact.html')
 
 
 # ---------------- ADD TO CART ----------------
@@ -129,7 +153,7 @@ def cart_view(request):
 
 
 # ---------------- LOGIN ----------------
-
+# (see user_login below)
 
 
 # ---------------- LOGOUT ----------------
@@ -180,7 +204,15 @@ def search(request):
             Q(category__name__icontains=query)
         )
     if category_id:
-        products = products.filter(category_id=category_id)
+        # category_id may be a numeric PK or a category name/slug string
+        try:
+            products = products.filter(category_id=int(category_id))
+        except (ValueError, TypeError):
+            # Fall back to filtering by name or slug
+            products = products.filter(
+                Q(category__name__iexact=category_id) |
+                Q(category__slug__iexact=category_id)
+            )
     if min_price:
         products = products.filter(price__gte=min_price)
     if max_price:
@@ -284,6 +316,14 @@ def product_detail(request, product_id):
             user=request.user, product=product
         ).exists()
 
+    
+    user_purchased = False
+    if request.user.is_authenticated:
+        user_purchased = Order.objects.filter(
+            user=request.user,
+            orderitem__product=product,
+            status__in=['delivered','shipped','out_for_delivery']
+        ).exists()
     related_products = Product.objects.filter(
         category=product.category
     ).exclude(id=product.id)[:4]
@@ -304,6 +344,7 @@ def product_detail(request, product_id):
         'related_products': related_products,
         'bulk_discounts': bulk_discounts,
         'questions': questions,
+        'user_purchased': user_purchased,
     })
 
 
@@ -805,6 +846,7 @@ def order_tracking(request, order_id):
         'order_items': order_items,
         'status_steps': status_steps,
         'progress': order.get_status_percentage(),
+	'status_choices': Order.STATUS_CHOICES,
     })
 
 
@@ -827,14 +869,28 @@ def update_order_status(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        tracking_id = request.POST.get('tracking_id', '')
-        if new_status in dict(Order.STATUS_CHOICES):
-            order.status = new_status
-            if tracking_id:
-                order.tracking_id = tracking_id
-            order.save()
-            messages.success(request, f'Order #{order.id} updated to {new_status}.')
-    return redirect(request.META.get('HTTP_REFERER', 'admin_dashboard'))
+        tracking_id = request.POST.get('tracking_id', '').strip()
+        order.status = new_status
+        if tracking_id:
+            order.tracking_id = tracking_id
+        order.save()
+        # ✅ இங்க add பண்ணு
+        send_push_notification(
+            order.user,
+            title=f'Order #{order.id} Update',
+            body=f'உங்க order status: {new_status}',
+            url=f'/order/track/{order.id}/'
+        )
+        if order.user.email:
+            send_mail(
+                f'Order #{order.id} Update',
+                f'உங்க order status {new_status} ஆச்சு!',
+                settings.DEFAULT_FROM_EMAIL,
+                [order.user.email]
+            )
+
+        messages.success(request, 'Order status updated!')
+        return redirect('manage_orders')
 
 
 # ---------------- APPLY COUPON ----------------
@@ -874,7 +930,7 @@ def remove_coupon(request):
     return redirect('checkout')
 
 def product_list(request):
-    products = Product.objects.all()
+    products = Product.objects.filter(is_active=True)
     return render(request, 'shop/product_list.html', {'products': products})
 
 # ---------------- ADD PRODUCT (Admin) ----------------
@@ -1384,7 +1440,9 @@ Do not share this with anyone.
     )
 
 
+
 # ── Login View with Rate Limiting ──
+@ensure_csrf_cookie
 def user_login(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -1511,3 +1569,87 @@ def resend_otp(request):
         messages.warning(request, f'[DEV] OTP resent to console.')
 
     return redirect('verify_2fa')
+
+from pywebpush import webpush, WebPushException
+
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+VAPID_CLAIMS = {"sub": f"mailto:{os.getenv('VAPID_CLAIMS_EMAIL', '')}"}
+
+# Subscribe endpoint
+def save_push_subscription(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        PushSubscription.objects.update_or_create(
+            endpoint=data['endpoint'],
+            defaults={
+                'user': request.user,
+                'p256dh': data['keys']['p256dh'],
+                'auth': data['keys']['auth'],
+            }
+        )
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'method not allowed'}, status=405)
+
+# Send push to one user
+def send_push_notification(user, title, body, url='/'):
+    subscriptions = PushSubscription.objects.filter(user=user)
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                },
+                data=json.dumps({"title": title, "body": body, "url": url}),
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS,
+            )
+        except WebPushException:
+            sub.delete()
+
+# Admin Broadcast
+def admin_broadcast(request):
+    if not request.user.is_staff:
+        return redirect('home')
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        body = request.POST.get('body')
+        url = request.POST.get('url', '/')
+        # Email + Push — எல்லா user-க்கும்
+        users = User.objects.filter(is_active=True)
+        for user in users:
+            send_push_notification(user, title, body, url)
+            if user.email:
+                send_mail(title, body, settings.DEFAULT_FROM_EMAIL, [user.email])
+        messages.success(request, f'{users.count()} users-க்கு notification அனுப்பினோம்!')
+        return redirect('admin_broadcast')
+    return render(request, 'shop/admin_broadcast.html')
+
+def order_status_api(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    return JsonResponse({
+        'status': order.status,
+        'progress': order.get_status_percentage(),
+        'status_display': order.get_status_display(),
+        'estimated_delivery': order.estimated_delivery.strftime('%A, %b %d, %Y') if order.estimated_delivery else None,
+    })
+
+def notify_back_in_stock(product):
+    from .models import StockNotification
+    notifications = StockNotification.objects.filter(product=product, notified=False)
+    for notif in notifications:
+        send_push_notification(
+            notif.user,
+            title=f'{product.name} Back in Stock!',
+            body='உங்களுக்கு பிடிச்ச product திரும்ப வந்துடுச்சு!',
+            url=f'/product/{product.id}/'
+        )
+        if notif.user.email:
+            send_mail(
+                f'{product.name} is Back!',
+                f'{product.name} திரும்ப available ஆச்சு. இப்பவே வாங்குங்க!',
+                settings.DEFAULT_FROM_EMAIL,
+                [notif.user.email]
+            )
+        notif.notified = True
+        notif.save()

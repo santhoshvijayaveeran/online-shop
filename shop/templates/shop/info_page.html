@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page.title }} — SANZCART{% endblock %}
+
+{% block content %}
+<style>
+    .info-hero {
+        background: var(--sanzcart-bg);
+        padding: 80px 0 60px;
+        text-align: center;
+        border-bottom: 1.5px solid var(--sanzcart-border);
+    }
+    .info-title {
+        font-family: var(--font-heading);
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin: 0;
+        color: var(--sanzcart-text);
+    }
+    .info-content-wrap {
+        background: var(--sanzcart-card);
+        padding: 60px 0 100px;
+    }
+    .info-content {
+        max-width: 800px;
+        margin: 0 auto;
+        font-size: 1.05rem;
+        line-height: 1.8;
+        color: var(--sanzcart-text);
+    }
+    .info-content p {
+        margin-bottom: 20px;
+        color: var(--sanzcart-muted);
+    }
+    .info-content strong {
+        color: var(--sanzcart-text);
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+</style>
+
+<div class="info-hero">
+    <div class="container">
+        <h1 class="info-title">{{ page.title }}</h1>
+    </div>
+</div>
+
+<div class="info-content-wrap">
+    <div class="container">
+        <div class="info-content">
+            {{ page.content|safe }}
+        </div>
+    </div>
+</div>
+{% endblock %}

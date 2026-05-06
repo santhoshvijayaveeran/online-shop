@@ -1,10 +1,9 @@
-const CACHE_NAME = 'online-shop-v1';
+const CACHE_NAME = 'online-shop-v2';
 const STATIC_CACHE = 'static-v1';
 
 const urlsToCache = [
     '/',
     '/offline/',
-    '/static/css/style.css',
 ];
 
 // Install - cache files
@@ -33,7 +32,7 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch - serve from cache or network
+// Fetch - Network-First strategy
 self.addEventListener('fetch', event => {
     // Only handle GET requests
     if (event.request.method !== 'GET') return;
@@ -42,27 +41,44 @@ self.addEventListener('fetch', event => {
     if (event.request.url.includes('/admin/')) return;
 
     event.respondWith(
-        caches.match(event.request)
-            .then(cachedResponse => {
-                if (cachedResponse) {
-                    return cachedResponse;
+        fetch(event.request)
+            .then(response => {
+                // Network successful - cache and return
+                if (response && response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
                 }
-
-                return fetch(event.request)
-                    .then(response => {
-                        // Cache successful responses
-                        if (response && response.status === 200) {
-                            const responseClone = response.clone();
-                            caches.open(CACHE_NAME).then(cache => {
-                                cache.put(event.request, responseClone);
-                            });
+                return response;
+            })
+            .catch(() => {
+                // Network failed - fallback to cache
+                return caches.match(event.request)
+                    .then(cachedResponse => {
+                        if (cachedResponse) {
+                            return cachedResponse;
                         }
-                        return response;
-                    })
-                    .catch(() => {
-                        // Offline fallback
-                        return caches.match('/offline/');
+                        // If not in cache, return offline page
+                        if (event.request.headers.get('accept').includes('text/html')) {
+                            return caches.match('/offline/');
+                        }
                     });
             })
     );
+});
+
+// Push Notification
+self.addEventListener('push', function(event) {
+    const data = event.data.json();
+    self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/static/images/logo.png',
+        data: { url: data.url }
+    });
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(clients.openWindow(event.notification.data.url));
 });

@@ -1,80 +1,61 @@
 {% extends 'base.html' %}
+{% block title %}My Orders — SANZCART{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <h2 class="section-title">My Orders</h2>
-
+<style>
+    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; cursor: pointer; text-decoration: none; }
+    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); color: #fff; }
+    .btn-outline-sc { background: transparent; color: var(--sanzcart-text); border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer; text-decoration: none; }
+    .btn-outline-sc:hover { border-color: var(--sanzcart-text); color: var(--sanzcart-text); }
+</style>
+<div class="container py-4">
+    <h2 class="section-head" style="margin-bottom:28px;font-family:var(--font-heading);font-weight:800;letter-spacing:-0.5px;">My Orders</h2>
     {% if orders %}
     <div style="display:flex;flex-direction:column;gap:16px;">
         {% for order in orders %}
-        <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:22px;">
-            <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div style="background:var(--sanzcart-card);border:1.5px solid var(--sanzcart-border);border-radius:14px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.02);">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--sanzcart-bg);border-bottom:1.5px solid var(--sanzcart-border);flex-wrap:wrap;gap:8px;">
                 <div>
-                    <div style="font-weight:700;font-size:1rem;">Order #{{ order.id }}</div>
-                    <div style="font-size:0.82rem;color:var(--gray);">{{ order.created_at|date:"M d, Y · h:i A" }}</div>
+                    <span style="font-weight:700;font-size:1rem;color:var(--sanzcart-text);">Order #{{ order.id }}</span>
+                    <span style="color:var(--sanzcart-muted);font-size:0.85rem;margin-left:12px;font-weight:500;">{{ order.created_at|date:"M d, Y" }}</span>
                 </div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="background:var(--gray-light);padding:4px 12px;border-radius:4px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
-                        {% if order.status == 'delivered' %}background:#f0fff4;color:#276749;
-                        {% elif order.status == 'cancelled' %}background:#fff5f5;color:#e53e3e;
-                        {% elif order.status == 'processing' %}background:#fffbeb;color:#92400e;
-                        {% else %}color:var(--gray-dark);{% endif %}">
-                        {{ order.status }}
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="padding:4px 12px;border-radius:4px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+                        {% if order.status == 'delivered' %}background:rgba(0,184,83,0.1);color:#00b853;
+                        {% elif order.status == 'cancelled' %}background:rgba(230,57,70,0.1);color:#d32f2f;
+                        {% elif order.status == 'shipped' or order.status == 'out_for_delivery' %}background:rgba(25,118,210,0.1);color:#1976d2;
+                        {% else %}background:rgba(255,152,0,0.1);color:#e65100;{% endif %}">
+                        {{ order.get_status_display }}
                     </span>
-                    {% if order.payment %}
-                    <span style="background:#f0fff4;color:#276749;padding:4px 12px;border-radius:4px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">
-                        ✓ Paid
-                    </span>
-                    {% else %}
-                    <span style="background:var(--gray-light);color:var(--gray);padding:4px 12px;border-radius:4px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">
-                        COD
-                    </span>
-                    {% endif %}
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:1.1rem;color:var(--sanzcart-primary);">${{ order.total_price }}</span>
                 </div>
             </div>
-
-            <!-- Order Items -->
-            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            <div style="padding:16px 20px;">
                 {% for item in order.orderitem_set.all %}
-                <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-light);border-radius:8px;">
-                    {% if item.product.image %}
-                    <img src="{{ item.product.image.url }}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
-                    {% else %}
-                    <div style="width:44px;height:44px;background:white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🛍</div>
-                    {% endif %}
-                    <div style="flex:1;font-size:0.88rem;font-weight:600;">{{ item.product.name }}</div>
-                    <div style="font-size:0.82rem;color:var(--gray);">× {{ item.quantity }}</div>
-                    <div style="font-weight:700;font-size:0.88rem;">₹{{ item.get_subtotal }}</div>
+                <div style="display:flex;align-items:center;gap:16px;{% if not forloop.last %}margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--sanzcart-border);{% endif %}">
+                    {% if item.product.image %}<img src="{{ item.product.image.url }}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--sanzcart-border);">
+                    {% else %}<div style="width:56px;height:56px;background:var(--sanzcart-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border:1px solid var(--sanzcart-border);">🛍</div>{% endif %}
+                    <div style="flex:1;">
+                        <div style="font-weight:700;font-size:0.95rem;color:var(--sanzcart-text);margin-bottom:2px;">{{ item.product.name }}</div>
+                        <div style="font-size:0.85rem;color:var(--sanzcart-muted);font-weight:500;">Qty: {{ item.quantity }} × ${{ item.price }}</div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:14px;">
-                <div style="font-weight:800;font-size:1rem;">Total: ₹{{ order.total_price }}</div>
-                <div style="display:flex;gap:8px;">
-                    {% if order.returns.exists %}
-                    <span style="background:var(--gray-light);color:var(--gray);padding:7px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;">
-                        Return: {{ order.returns.first.status }}
-                    </span>
-                    {% elif order.status in 'delivered,processing' %}
-                    <a href="{% url 'request_return' order.id %}" class="btn-outline-min" style="padding:7px 14px;font-size:0.82rem;">
-                        🔄 Request Return
-                    </a>
-                    {% endif %}
-                   <a href="{% url 'order_tracking' order.id %}" class="btn-primary-min" style="padding:7px 14px;font-size:0.82rem;">
-    <i class="fas fa-map-marker-alt me-1"></i> Track Order
-</a>
-                </div>
+            <div style="padding:16px 20px;background:var(--sanzcart-bg);border-top:1.5px solid var(--sanzcart-border);display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="{% url 'order_tracking' order.id %}" class="btn-primary-sc" style="padding:8px 20px;font-size:0.85rem;"><i class="fas fa-truck me-1"></i>Track</a>
+                {% if order.status == 'delivered' and not order.returns.exists %}
+                <a href="{% url 'request_return' order.id %}" class="btn-outline-sc" style="padding:8px 20px;font-size:0.85rem;">Return</a>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
-
     {% else %}
     <div style="text-align:center;padding:80px 20px;">
-        <div style="font-size:3rem;margin-bottom:16px;">📦</div>
-        <h4 style="font-weight:700;margin-bottom:8px;">No orders yet</h4>
-        <p style="color:var(--gray);margin-bottom:24px;font-size:0.9rem;">Start shopping to see your orders here.</p>
-        <a href="{% url 'home' %}" class="btn-primary-min" style="padding:11px 28px;">Shop Now</a>
+        <div style="font-size:4rem;margin-bottom:16px;">📦</div>
+        <h4 style="font-family:var(--font-heading);font-weight:800;margin-bottom:8px;color:var(--sanzcart-text);">No orders yet</h4>
+        <p style="color:var(--sanzcart-muted);margin-bottom:24px;font-size:0.95rem;">Your order history will appear here.</p>
+        <a href="{% url 'search' %}" class="btn-primary-sc" style="padding:14px 32px;font-size:1rem;">Start Shopping</a>
     </div>
     {% endif %}
 </div>

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>📢 Broadcast Notification</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea name="body" class="form-control" rows="4" required></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">URL (optional)</label>
+            <input type="text" name="url" class="form-control" value="/">
+        </div>
+        <button type="submit" class="btn btn-dark">Send to All Users</button>
+    </form>
+</div>
+{% endblock %}

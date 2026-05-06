@@ -1,46 +1,73 @@
 {% extends 'base.html' %}
+{% block title %}Order Confirmed — SANZCART{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div style="max-width:580px;margin:0 auto;">
-        <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:40px;">
-            <div style="text-align:center;margin-bottom:32px;">
-                <div style="width:60px;height:60px;background:#f0fff4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 16px;">✓</div>
-                <h2 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;">Order confirmed!</h2>
-                <p style="color:var(--gray);font-size:0.9rem;">Order <strong style="color:var(--black);">#{{ order.id }}</strong> has been placed</p>
-                <span style="background:var(--gray-light);color:var(--gray-dark);padding:4px 12px;border-radius:4px;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+<style>
+    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; cursor: pointer; text-decoration: none; }
+    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); color: #fff; }
+    .btn-outline-sc { background: transparent; color: var(--sanzcart-text); padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer; text-decoration: none; }
+    .btn-outline-sc:hover { border-color: var(--sanzcart-text); color: var(--sanzcart-text); }
+</style>
+<div class="container py-5" style="background:var(--sanzcart-bg);min-height:75vh;display:flex;align-items:center;">
+    <div style="max-width:640px;margin:0 auto;width:100%;">
+        <div style="background:var(--sanzcart-card);border:1.5px solid var(--sanzcart-border);border-radius:14px;padding:48px;box-shadow:0 5px 15px rgba(0,0,0,0.02);">
+            
+            <div style="text-align:center;margin-bottom:40px;">
+                <div style="width:80px;height:80px;border-radius:50%;background:rgba(230,57,70,0.1);color:var(--sanzcart-primary);display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 24px;">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 style="font-family:var(--font-heading);font-weight:800;font-size:2.2rem;color:var(--sanzcart-text);letter-spacing:-0.5px;margin-bottom:12px;">Order Confirmed!</h2>
+                <p style="color:var(--sanzcart-muted);font-size:1.05rem;margin-bottom:24px;">
+                    Thank you for your purchase. Order <strong style="color:var(--sanzcart-text);">#{{ order.id }}</strong> has been successfully placed.
+                </p>
+                <span style="background:var(--sanzcart-primary);color:white;padding:6px 16px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
                     {{ order.status }}
                 </span>
             </div>
 
-            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-                <thead>
-                    <tr style="border-bottom:2px solid var(--black);">
-                        <th style="padding:10px 0;text-align:left;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Product</th>
-                        <th style="padding:10px 0;text-align:center;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Qty</th>
-                        <th style="padding:10px 0;text-align:right;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <!-- Order Items List -->
+            <div style="margin-bottom:32px;">
+                <h3 style="font-family:var(--font-heading);font-size:1.1rem;font-weight:800;color:var(--sanzcart-text);margin-bottom:20px;padding-bottom:12px;border-bottom:1.5px solid var(--sanzcart-border);">Order Summary</h3>
+                
+                <div style="display:flex;flex-direction:column;gap:16px;">
                     {% for item in order_items %}
-                    <tr style="border-bottom:1px solid var(--border);">
-                        <td style="padding:12px 0;font-weight:600;font-size:0.9rem;">{{ item.product.name }}</td>
-                        <td style="padding:12px 0;text-align:center;color:var(--gray);font-size:0.9rem;">{{ item.quantity }}</td>
-                        <td style="padding:12px 0;text-align:right;font-weight:700;font-size:0.9rem;">₹{{ item.get_subtotal }}</td>
-                    </tr>
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div style="width:64px;height:64px;background:var(--sanzcart-bg);border:1px solid var(--sanzcart-border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                            {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" style="width:100%;height:100%;object-fit:cover;">
+                            {% else %}
+                            <span style="font-size:1.5rem;">🛍</span>
+                            {% endif %}
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:0.95rem;color:var(--sanzcart-text);margin-bottom:4px;">{{ item.product.name }}</div>
+                            <div style="font-size:0.85rem;color:var(--sanzcart-muted);">
+                                Qty: {{ item.quantity }} &middot; {% if item.variant %}Size: {{ item.variant.size|default:'Free' }}{% else %}Default{% endif %}
+                            </div>
+                        </div>
+                        <div style="font-weight:800;font-size:1.05rem;color:var(--sanzcart-text);">
+                            ${{ item.get_subtotal|floatformat:2 }}
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-
-            <div style="display:flex;justify-content:space-between;padding:14px 0;border-top:2px solid var(--black);margin-bottom:28px;">
-                <span style="font-weight:700;font-size:1rem;">Total Paid</span>
-                <span style="font-weight:800;font-size:1.2rem;">₹{{ order.total_price }}</span>
+                </div>
             </div>
-            <a href="{% url 'order_tracking' order.id %}" class="btn-outline-min" style="padding:12px 28px;margin-right:10px;">
-    <i class="fas fa-map-marker-alt me-2"></i>Track Order
-</a>
-            <a href="{% url 'home' %}" class="btn-primary-min" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
-                Continue Shopping
-            </a>
+
+            <!-- Total Paid -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1.5px dashed var(--sanzcart-border);border-bottom:1.5px dashed var(--sanzcart-border);margin-bottom:32px;">
+                <span style="font-weight:700;font-size:1.1rem;color:var(--sanzcart-muted);">Total Paid</span>
+                <span style="font-family:var(--font-heading);font-weight:800;font-size:1.8rem;color:var(--sanzcart-primary);">${{ order.total_price }}</span>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <a href="{% url 'order_tracking' order.id %}" class="btn-primary-sc" style="flex:1;justify-content:center;padding:16px;font-size:1rem;border-radius:8px;">
+                    Track Order <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                <a href="{% url 'home' %}" class="btn-outline-sc" style="flex:1;justify-content:center;padding:16px;font-size:1rem;border-radius:8px;">
+                    Continue Shopping
+                </a>
+            </div>
+
         </div>
     </div>
 </div>

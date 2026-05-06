@@ -56,4 +56,10 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('verify-2fa/', views.verify_2fa, name='verify_2fa'),
     path('resend-otp/', views.resend_otp, name='resend_otp'),
+    path('push/subscribe/', views.save_push_subscription, name='save_push_subscription'),
+    path('dashboard/broadcast/', views.admin_broadcast, name='admin_broadcast'),
+    path('order/<int:order_id>/status/', views.order_status_api, name='order_status_api'),
+    path('about/', views.about, name='about'),
+    path('contact/', views.contact_us, name='contact_us'),
+    path('info/<slug:slug>/', views.info_page, name='info_page'),
 ]

@@ -1,27 +1,34 @@
 {% extends 'base.html' %}
+{% block title %}Payment — SANZCART{% endblock %}
 {% block content %}
-<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+<style>
+    .bg-main { background: var(--sanzcart-bg); }
+    .payment-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 40px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; width: 100%; cursor: pointer; text-decoration: none; }
+    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); }
+</style>
+<div class="bg-main" style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
     <div style="width:100%;max-width:480px;">
-        <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:40px;text-align:center;">
+        <div class="payment-card">
             <div style="font-size:2.5rem;margin-bottom:16px;">💳</div>
-            <h3 style="font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;">Complete Payment</h3>
-            <p style="color:var(--gray);font-size:0.9rem;margin-bottom:28px;">Order #{{ order.id }} · ₹{{ total }}</p>
+            <h3 style="font-weight:800;font-family:var(--font-heading);letter-spacing:-0.5px;margin-bottom:6px;color:var(--sanzcart-text);">Complete Payment</h3>
+            <p style="color:var(--sanzcart-muted);font-size:0.95rem;margin-bottom:28px;">Order #{{ order.id }} · ${{ total }}</p>
 
-            <div style="background:var(--gray-light);border-radius:8px;padding:16px;margin-bottom:24px;">
-                <div style="font-size:1.8rem;font-weight:800;letter-spacing:-1px;">₹{{ total }}</div>
-                <div style="font-size:0.82rem;color:var(--gray);margin-top:4px;">Total Amount</div>
+            <div style="background:var(--sanzcart-bg);border-radius:12px;padding:24px;margin-bottom:32px;">
+                <div style="font-size:2rem;font-weight:800;font-family:var(--font-heading);letter-spacing:-1px;color:var(--sanzcart-primary);">${{ total }}</div>
+                <div style="font-size:0.85rem;color:var(--sanzcart-muted);margin-top:4px;font-weight:600;">Total Amount</div>
             </div>
 
-            <button id="rzp-btn" class="btn-primary-min" style="width:100%;justify-content:center;padding:14px;font-size:1rem;margin-bottom:12px;">
+            <button id="rzp-btn" class="btn-primary-sc">
                 Pay Now
             </button>
 
-            <a href="{% url 'cart' %}" style="display:block;font-size:0.85rem;color:var(--gray);text-decoration:none;margin-top:8px;">
+            <a href="{% url 'cart' %}" style="display:block;font-size:0.9rem;font-weight:600;color:var(--sanzcart-muted);text-decoration:none;margin-top:16px;transition:0.2s;" onmouseover="this.style.color='var(--sanzcart-primary)'" onmouseout="this.style.color='var(--sanzcart-muted)'">
                 ← Back to Cart
             </a>
 
-            <p style="font-size:0.75rem;color:var(--gray);margin-top:16px;">
-                🔒 100% Secure · Powered by Razorpay
+            <p style="font-size:0.8rem;font-weight:600;color:var(--sanzcart-muted);margin-top:24px;">
+                <i class="fas fa-lock" style="color:var(--sanzcart-primary);margin-right:6px;"></i> 100% Secure · Powered by Razorpay
             </p>
         </div>
     </div>

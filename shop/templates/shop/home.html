@@ -1,193 +1,537 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block content %}
+<style>
+    /* UTILITIES */
+    .section-padding { padding: 80px 0; }
+    .bg-light-alt { background: #ffffff; }
+    .bg-main { background: var(--sanzcart-bg); }
+    
+    .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; text-align: center; }
+    
+    /* BUTTONS */
+    .btn-primary-sc {
+        background: var(--sanzcart-primary); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 600; 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none;
+    }
+    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); }
+    
+    .btn-outline-sc {
+        background: transparent; color: var(--sanzcart-text); padding: 12px 28px; border-radius: 8px; font-weight: 600; 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 2px solid var(--sanzcart-border);
+    }
+    .btn-outline-sc:hover { border-color: var(--sanzcart-text); color: var(--sanzcart-text); }
 
-<!-- HERO -->
-<div style="background:var(--black);padding:80px 0;margin-bottom:60px;">
-    <div class="container text-center">
-        <p style="color:#888;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">New Arrivals 2026</p>
-        <h1 style="color:white;font-size:3rem;font-weight:700;letter-spacing:-1px;margin-bottom:16px;">
-            Simple. Quality.<br>Affordable.
-        </h1>
-        <p style="color:#888;font-size:1rem;margin-bottom:32px;">Discover products you'll love.</p>
-        <a href="{% url 'search' %}" class="btn-primary-min" style="padding:12px 32px;font-size:1rem;">
-            Shop Now <i class="fas fa-arrow-right ms-2"></i>
-        </a>
-    </div>
-</div>
+    /* HERO SECTION */
+    .hero-section {
+        background: var(--sanzcart-bg);
+        padding: 60px 0 100px;
+        overflow: hidden;
+    }
+    .eyebrow-tag {
+        display: inline-block; padding: 6px 14px; background: rgba(230,57,70,0.1); color: var(--sanzcart-primary);
+        font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; border-radius: 30px; margin-bottom: 24px; text-transform: uppercase;
+    }
+    .hero-title {
+        font-family: var(--font-heading); font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800; line-height: 1.1; 
+        letter-spacing: -2px; margin-bottom: 24px; color: var(--sanzcart-text);
+    }
+    .hero-subtitle {
+        font-size: 1.1rem; color: var(--sanzcart-muted); margin-bottom: 40px; max-width: 450px; line-height: 1.6;
+    }
+    .hero-stats {
+        display: flex; gap: 32px; margin-top: 50px; flex-wrap: wrap;
+    }
+    .stat-item h4 { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+    .stat-item p { font-size: 0.85rem; color: var(--sanzcart-muted); margin: 0; font-weight: 500; }
 
-<div class="container">
+    /* HERO FEATURED CARD */
+    .hero-featured-card {
+        background: var(--sanzcart-card);
+        border: 1.5px solid var(--sanzcart-border);
+        border-radius: 14px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+        max-width: 380px;
+        margin: 0 auto;
+        transform: rotate(2deg);
+        transition: transform 0.3s;
+    }
+    .hero-featured-card:hover { transform: rotate(0deg) translateY(-10px); }
+    .hero-card-top-bar { height: 6px; background: var(--sanzcart-primary); width: 100%; }
+    .hero-card-img { height: 320px; background: #f0ece5; display: flex; align-items: center; justify-content: center; position: relative; }
+    .hero-card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .stock-pill {
+        position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);
+        padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .stock-dot { width: 8px; height: 8px; border-radius: 50%; background: #00b853; }
+    .hero-card-body { padding: 24px; }
+    .hc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .hc-name { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+    .hc-price-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 20px; }
+    .hc-price { font-size: 1.5rem; font-weight: 800; color: var(--sanzcart-text); line-height: 1; }
+    .hc-price-old { font-size: 1rem; color: var(--sanzcart-muted); text-decoration: line-through; margin-bottom: 2px; }
+    .btn-add-cart {
+        width: 100%; background: var(--sanzcart-dark); color: #fff; padding: 14px; border: none; border-radius: 8px;
+        font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+    }
+    .btn-add-cart:hover { background: var(--sanzcart-primary); }
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-dismissible fade show mb-4" role="alert"
-         style="border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:0.9rem;">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
-    {% endif %}
+    /* CATEGORIES GRID */
+    .cat-card {
+        background: var(--sanzcart-card);
+        border: 1.5px solid var(--sanzcart-border);
+        border-radius: 14px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+    .cat-card:hover { border-color: var(--sanzcart-primary); transform: translateY(-4px); box-shadow: 0 10px 24px rgba(230,57,70,0.08); }
+    .cat-icon-box {
+        width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+    }
+    .cat-info { flex: 1; }
+    .cat-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .cat-count { font-size: 0.85rem; color: var(--sanzcart-muted); }
+    .cat-arrow { color: var(--sanzcart-border); transition: 0.3s; }
+    .cat-card:hover .cat-arrow { color: var(--sanzcart-primary); transform: translateX(4px); }
 
-    <!-- TRENDING -->
-    {% if trending %}
-    <div class="mb-5">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h2 class="section-title mb-0">Trending</h2>
-            <a href="{% url 'search' %}" style="color:var(--gray);font-size:0.88rem;text-decoration:none;">View all →</a>
-        </div>
-        <div class="row g-3">
-            {% for product in trending %}
-            <div class="col-6 col-md-3">
-                <div class="product-card h-100">
-                    <div style="position:relative;">
-                        {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
-                        {% else %}
-                        <div style="height:200px;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🛍</div>
-                        {% endif %}
-                        <span style="position:absolute;top:10px;left:10px;background:var(--black);color:white;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.5px;">
-                            TRENDING
-                        </span>
-                        {% if request.user.is_authenticated %}
-                        <a href="{% url 'add_to_wishlist' product.id %}"
-                           style="position:absolute;top:10px;right:10px;background:white;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid var(--border);transition:0.2s;font-size:0.9rem;"
-                           onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">
-                            ♡
-                        </a>
-                        {% endif %}
+    /* FEATURED PRODUCTS */
+    .product-card {
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+        overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; height: 100%;
+    }
+    .product-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
+    .pc-img-wrap { height: 260px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; }
+    .pc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .pc-badge {
+        position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .pc-badge.new { background: var(--sanzcart-dark); color: #fff; }
+    .pc-badge.sale { background: var(--sanzcart-primary); color: #fff; }
+    .pc-badge.hot { background: #ff9800; color: #fff; }
+    .pc-wishlist {
+        position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: #fff;
+        display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); opacity: 0; transform: scale(0.8); transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer;
+    }
+    .product-card:hover .pc-wishlist { opacity: 1; transform: scale(1); }
+    .pc-wishlist:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
+    .pc-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+    .pc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .pc-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--sanzcart-text); }
+    .pc-rating { display: flex; gap: 2px; color: #ffb400; font-size: 0.8rem; margin-bottom: 16px; }
+    .pc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .pc-price { font-size: 1.2rem; font-weight: 800; }
+    .pc-add-btn {
+        width: 40px; height: 40px; border-radius: 8px; background: var(--sanzcart-bg); border: 1.5px solid var(--sanzcart-border);
+        display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); transition: 0.2s; cursor: pointer;
+    }
+    .pc-add-btn:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
+
+    /* PROMO BANNER */
+    .promo-card {
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px;
+        padding: 60px; overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+    }
+    .promo-headline { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; line-height: 1.2; }
+    .timer-wrap { display: flex; gap: 16px; margin-bottom: 32px; }
+    .timer-box { width: 70px; height: 70px; background: var(--sanzcart-bg); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .timer-num { font-size: 1.6rem; font-weight: 800; color: var(--sanzcart-primary); line-height: 1; }
+    .timer-label { font-size: 0.65rem; font-weight: 700; color: var(--sanzcart-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+    
+    .feature-tile {
+        background: var(--sanzcart-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .ft-icon { width: 48px; height: 48px; background: rgba(230,57,70,0.1); color: var(--sanzcart-primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .ft-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .ft-desc { font-size: 0.8rem; color: var(--sanzcart-muted); }
+
+    /* TESTIMONIALS */
+    .testimonial-card {
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+        padding: 32px; height: 100%; transition: 0.3s;
+    }
+    .testimonial-card:hover { border-color: var(--sanzcart-primary); transform: translateY(-4px); }
+    .t-rating { color: #ffb400; font-size: 1rem; margin-bottom: 20px; display: flex; gap: 4px; }
+    .t-quote { font-size: 1.05rem; line-height: 1.6; color: var(--sanzcart-text); margin-bottom: 30px; font-style: italic; }
+    .t-author { display: flex; align-items: center; gap: 16px; }
+    .t-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--sanzcart-dark); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+    .t-name { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+    .t-loc { font-size: 0.8rem; color: var(--sanzcart-muted); }
+
+    /* NEWSLETTER */
+    .newsletter-section { padding: 0 0 80px; }
+    .newsletter-card {
+        background: var(--sanzcart-dark); color: #fff; border-radius: 20px; padding: 80px 40px; text-align: center; position: relative; overflow: hidden;
+    }
+    .nl-blob-1 { position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: rgba(230,57,70,0.2); filter: blur(60px); border-radius: 50%; }
+    .nl-blob-2 { position: absolute; bottom: -100px; right: -100px; width: 300px; height: 300px; background: rgba(230,57,70,0.15); filter: blur(60px); border-radius: 50%; }
+    .nl-title { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; position: relative; z-index: 2; }
+    .nl-desc { font-size: 1.05rem; color: #aaa; margin-bottom: 40px; position: relative; z-index: 2; }
+    .nl-form { max-width: 500px; margin: 0 auto; display: flex; gap: 12px; position: relative; z-index: 2; }
+    .nl-input {
+        flex: 1; padding: 16px 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
+        color: #fff; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.2s;
+    }
+    .nl-input:focus { border-color: var(--sanzcart-primary); background: rgba(255,255,255,0.1); }
+    .nl-btn {
+        background: var(--sanzcart-primary); color: #fff; padding: 0 32px; border-radius: 12px; border: none; font-weight: 600;
+        font-family: var(--font-body); cursor: pointer; transition: 0.2s; font-size: 1rem;
+    }
+    .nl-btn:hover { background: #d32f2f; }
+
+    @media(max-width: 991px) {
+        .promo-card { padding: 40px 30px; }
+        .hero-featured-card { margin-top: 60px; transform: rotate(0); }
+        .nl-form { flex-direction: column; }
+        .nl-btn { padding: 16px; }
+    }
+</style>
+
+<!-- 3. HERO SECTION -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="eyebrow-tag">✨ New Collection 2026</div>
+                <h1 class="hero-title">Discover Your<br>Style</h1>
+                <p class="hero-subtitle">Explore our latest arrivals featuring premium materials, modern cuts, and unbeatable comfort. Elevate your everyday wardrobe today.</p>
+                
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{% url 'search' %}" class="btn-primary-sc">Shop Now <i class="fas fa-arrow-right"></i></a>
+                    <a href="{% url 'search' %}?deals=true" class="btn-outline-sc">Browse Deals</a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <h4>12K+</h4>
+                        <p>Products</p>
                     </div>
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title">{{ product.name }}</h6>
-                        <div style="display:flex;gap:2px;margin-bottom:6px;">
-                            {% for i in "12345" %}
-                            <i class="fas fa-star" style="font-size:0.65rem;color:{% if forloop.counter <= product.avg_rating|default:0 %}#111{% else %}#ddd{% endif %};"></i>
-                            {% endfor %}
-                            <span style="font-size:0.72rem;color:var(--gray);margin-left:4px;">({{ product.review_count }})</span>
-                        </div>
-                        <p class="price mb-3">₹{{ product.price }}</p>
-                        <div class="d-flex gap-2 mt-auto">
-                            <a href="{% url 'product_detail' product.id %}" class="btn-primary-min flex-grow-1 justify-content-center" style="font-size:0.8rem;padding:7px 10px;">
-                                View
-                            </a>
-                            {% if request.user.is_authenticated %}
-                            <a href="{% url 'add_to_cart' product.id %}" class="btn-outline-min" style="padding:7px 10px;font-size:0.8rem;">
-                                <i class="fas fa-plus"></i>
-                            </a>
-                            {% endif %}
-                        </div>
+                    <div class="stat-item">
+                        <h4>320+</h4>
+                        <p>Brands</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>4.9★</h4>
+                        <p>Rating</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>2hr</h4>
+                        <p>Delivery</p>
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- DIVIDER -->
-    <hr style="border:none;border-top:1px solid var(--border);margin:40px 0;">
-    {% if recently_viewed %}
-<div class="mb-5">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h2 class="section-title mb-0">Recently Viewed</h2>
-    </div>
-    <div class="row g-3">
-        {% for rv in recently_viewed %}
-        <div class="col-6 col-md-2">
-            <a href="{% url 'product_detail' rv.product.id %}" style="text-decoration:none;">
-                <div style="background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:0.2s;"
-                     onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">
-                    {% if rv.product.image %}
-                    <img src="{{ rv.product.image.url }}" style="width:100%;height:120px;object-fit:cover;">
-                    {% else %}
-                    <div style="height:120px;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:2rem;">🛍</div>
-                    {% endif %}
-                    <div style="padding:10px;">
-                        <div style="font-size:0.8rem;font-weight:600;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ rv.product.name }}</div>
-                        <div style="font-size:0.82rem;font-weight:700;color:var(--black);margin-top:2px;">₹{{ rv.product.price }}</div>
+            <div class="col-lg-6 mt-5 mt-lg-0">
+                <!-- Featured Product Card using real data -->
+                {% if trending %}
+                {% with featured=trending|first %}
+                <div class="hero-featured-card">
+                    <div class="hero-card-top-bar"></div>
+                    <div class="hero-card-img">
+                        {% if featured.image %}
+                        <img src="{{ featured.image.url }}" alt="{{ featured.name }}">
+                        {% else %}
+                        <div style="font-size: 5rem; color: #ddd;">🛍</div>
+                        {% endif %}
+                        <div class="stock-pill">
+                            <span class="stock-dot"></span> In Stock
+                        </div>
+                    </div>
+                    <div class="hero-card-body">
+                        <div class="hc-cat">{{ featured.category.name|default:"Premium" }}</div>
+                        <h3 class="hc-name">{{ featured.name|truncatechars:35 }}</h3>
+                        <div class="hc-price-row">
+                            <div class="hc-price">${{ featured.price }}</div>
+                            {% if featured.old_price %}
+                            <div class="hc-price-old">${{ featured.old_price }}</div>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'add_to_cart' featured.id %}" class="btn-add-cart">Add to Cart <i class="fas fa-shopping-bag ms-2"></i></a>
                     </div>
                 </div>
-            </a>
+                {% endwith %}
+                {% endif %}
+            </div>
         </div>
-        {% endfor %}
     </div>
-</div>
-{% endif %}
+</section>
 
-    <!-- ALL PRODUCTS -->
-    <div class="mb-5">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h2 class="section-title mb-0">All Products</h2>
+<!-- 4. CATEGORIES GRID (bg-light-alt = #fff) -->
+<section class="section-padding bg-light-alt">
+    <div class="container">
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="row g-4">
+            <!-- Cat 1 -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <a href="{% url 'search' %}?category=Fashion" class="cat-card">
+                    <div class="cat-icon-box" style="background: rgba(230,57,70,0.1); color: var(--sanzcart-primary);">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="cat-info">
+                        <div class="cat-name">Fashion</div>
+                        <div class="cat-count">Trending Styles</div>
+                    </div>
+                    <i class="fas fa-chevron-right cat-arrow"></i>
+                </a>
+            </div>
+            <!-- Cat 2 -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <a href="{% url 'search' %}?category=Electronics" class="cat-card">
+                    <div class="cat-icon-box" style="background: rgba(33,150,243,0.1); color: #2196f3;">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="cat-info">
+                        <div class="cat-name">Electronics</div>
+                        <div class="cat-count">Latest Gadgets</div>
+                    </div>
+                    <i class="fas fa-chevron-right cat-arrow"></i>
+                </a>
+            </div>
+            <!-- Cat 3 -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <a href="{% url 'search' %}?category=Accessories" class="cat-card">
+                    <div class="cat-icon-box" style="background: rgba(255,152,0,0.1); color: #ff9800;">
+                        <i class="fas fa-glasses"></i>
+                    </div>
+                    <div class="cat-info">
+                        <div class="cat-name">Accessories</div>
+                        <div class="cat-count">Premium Add-ons</div>
+                    </div>
+                    <i class="fas fa-chevron-right cat-arrow"></i>
+                </a>
+            </div>
+            <!-- Cat 4 -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <a href="{% url 'search' %}?category=Footwear" class="cat-card">
+                    <div class="cat-icon-box" style="background: rgba(0,184,83,0.1); color: #00b853;">
+                        <i class="fas fa-shoe-prints"></i>
+                    </div>
+                    <div class="cat-info">
+                        <div class="cat-name">Footwear</div>
+                        <div class="cat-count">Comfort & Style</div>
+                    </div>
+                    <i class="fas fa-chevron-right cat-arrow"></i>
+                </a>
+            </div>
         </div>
+    </div>
+</section>
 
-        <!-- Category Pills -->
-        {% if categories %}
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
-            <a href="{% url 'home' %}" class="btn-primary-min" style="padding:6px 14px;font-size:0.8rem;">All</a>
-            {% for cat in categories %}
-            <a href="{% url 'search' %}?category={{ cat }}" class="btn-outline-min" style="padding:6px 14px;font-size:0.8rem;">{{ cat }}</a>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="row g-3">
-            {% for product in products %}
-            <div class="col-6 col-md-3">
-                <div class="product-card h-100">
-                    <div style="position:relative;">
+<!-- 5. FEATURED PRODUCTS GRID (bg-main = #f7f4ef) -->
+<section class="section-padding bg-main">
+    <div class="container">
+        <h2 class="section-title">Featured Products</h2>
+        <div class="row g-4">
+            
+            {% for product in products|slice:":8" %}
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="product-card">
+                    <div class="pc-img-wrap">
                         {% if product.image %}
                         <img src="{{ product.image.url }}" alt="{{ product.name }}">
                         {% else %}
-                        {% if product.is_out_of_stock %}
-<span style="position:absolute;bottom:10px;left:10px;background:#e53e3e;color:white;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:700;">
-    OUT OF STOCK
-</span>
-{% elif product.is_low_stock %}
-<span style="position:absolute;bottom:10px;left:10px;background:#f59e0b;color:white;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:700;">
-    ONLY {{ product.stock }} LEFT
-</span>
-{% endif %}
-                        <div style="height:200px;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🛍</div>
+                        <div style="font-size: 3rem; color: #ddd;">🛍</div>
                         {% endif %}
-                        {% if request.user.is_authenticated %}
-                        <a href="{% url 'add_to_wishlist' product.id %}"
-                           style="position:absolute;top:10px;right:10px;background:white;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid var(--border);transition:0.2s;font-size:0.9rem;"
-                           onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">
-                            ♡
-                        </a>
-                        {% endif %}
+                        
+                        <!-- Badges logic -->
+                        {% if forloop.counter == 1 %}<div class="pc-badge new">NEW</div>{% endif %}
+                        {% if product.stock < 10 %}<div class="pc-badge hot">HOT</div>{% endif %}
+                        
+                        <div class="pc-wishlist" onclick="window.location.href='{% url 'add_to_wishlist' product.id %}'"><i class="far fa-heart"></i></div>
                     </div>
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title">{{ product.name }}</h6>
-                        <p style="font-size:0.78rem;color:var(--gray);margin-bottom:6px;">{{ product.category }}</p>
-                        <p class="price mb-3">₹{{ product.price }}</p>
-                        <div class="d-flex gap-2 mt-auto">
-    {% if product.is_out_of_stock %}
-        {% if request.user.is_authenticated %}
-            <a href="{% url 'notify_me' product.id %}" class="btn-outline-min flex-grow-1 justify-content-center" style="font-size:0.78rem;padding:7px;">
-                🔔 Notify
-            </a>
-        {% else %}
-            <button disabled style="background:var(--gray-light);color:var(--gray);border:none;border-radius:8px;padding:7px 10px;font-size:0.78rem;cursor:not-allowed;">
-                Out of Stock
-            </button>
-        {% endif %}
-    {% else %}
-        <a href="{% url 'product_detail' product.id %}" class="btn-primary-min flex-grow-1 justify-content-center" style="font-size:0.8rem;padding:7px 10px;">View</a>
-        {% if request.user.is_authenticated %}
-            <a href="{% url 'add_to_cart' product.id %}" class="btn-outline-min" style="padding:7px 10px;font-size:0.8rem;">
-                <i class="fas fa-plus"></i>
-            </a>
-        {% endif %}
-    {% endif %}
-</div>
+                    <div class="pc-body">
+                        <div class="pc-cat">{{ product.category.name|default:"General" }}</div>
+                        <a href="{% url 'product_detail' product.id %}" class="pc-name">{{ product.name|truncatechars:40 }}</a>
+                        <div class="pc-rating">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <div class="pc-bottom">
+                            <div class="pc-price">${{ product.price }}</div>
+                            <a href="{% url 'add_to_cart' product.id %}" class="pc-add-btn"><i class="fas fa-plus"></i></a>
+                        </div>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-12 text-center py-5">
-                <p style="color:var(--gray);">No products available.</p>
+            <div class="col-12 text-center" style="padding: 60px 20px;">
+                <p style="color:var(--sanzcart-muted);font-weight:500;font-size:1.1rem;">No featured products available at the moment.</p>
             </div>
             {% endfor %}
+
+        </div>
+        <div class="text-center mt-5">
+            <a href="{% url 'search' %}" class="btn-outline-sc">View All Products</a>
         </div>
     </div>
-</div>
+</section>
+
+<!-- 6. PROMO BANNER (bg-light-alt = #fff) -->
+<section class="section-padding bg-light-alt">
+    <div class="container">
+        <div class="promo-card">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="eyebrow-tag" style="background: rgba(26,26,26,0.05); color: var(--sanzcart-text);">Limited Time</div>
+                    <h2 class="promo-headline">Mega Sale<br>Is Live Now!</h2>
+                    
+                    <div class="timer-wrap" id="promoTimer">
+                        <div class="timer-box">
+                            <div class="timer-num" id="t-hours">08</div>
+                            <div class="timer-label">Hours</div>
+                        </div>
+                        <div class="timer-box">
+                            <div class="timer-num" id="t-mins">43</div>
+                            <div class="timer-label">Mins</div>
+                        </div>
+                        <div class="timer-box">
+                            <div class="timer-num" id="t-secs">22</div>
+                            <div class="timer-label">Secs</div>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'search' %}?deals=true" class="btn-primary-sc">Grab Deals <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="feature-tile">
+                                <div class="ft-icon"><i class="fas fa-truck"></i></div>
+                                <div>
+                                    <div class="ft-title">Free Delivery</div>
+                                    <div class="ft-desc">Orders over $50</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="feature-tile">
+                                <div class="ft-icon"><i class="fas fa-shield-alt"></i></div>
+                                <div>
+                                    <div class="ft-title">Secure Payment</div>
+                                    <div class="ft-desc">100% safe checkout</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="feature-tile">
+                                <div class="ft-icon"><i class="fas fa-undo"></i></div>
+                                <div>
+                                    <div class="ft-title">Easy Returns</div>
+                                    <div class="ft-desc">30 days policy</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="feature-tile">
+                                <div class="ft-icon"><i class="fas fa-headset"></i></div>
+                                <div>
+                                    <div class="ft-title">24/7 Support</div>
+                                    <div class="ft-desc">Always here for you</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 7. TESTIMONIALS (bg-main = #f7f4ef) -->
+<section class="section-padding bg-main">
+    <div class="container">
+        <h2 class="section-title">What Customers Say</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="t-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <div class="t-quote">"Absolutely love the quality of the clothes! The trench coat fits perfectly and arrived way faster than I expected. Will definitely shop again."</div>
+                    <div class="t-author">
+                        <div class="t-avatar">JD</div>
+                        <div>
+                            <div class="t-name">Jane Doe</div>
+                            <div class="t-loc">New York, NY</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="t-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                    <div class="t-quote">"The user experience on this site is phenomenal. Found exactly what I was looking for in seconds. Checkout was super smooth."</div>
+                    <div class="t-author">
+                        <div class="t-avatar" style="background: var(--sanzcart-primary);">MS</div>
+                        <div>
+                            <div class="t-name">Michael Smith</div>
+                            <div class="t-loc">Los Angeles, CA</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="t-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <div class="t-quote">"Customer support went above and beyond when I needed to exchange a size. SANZCART really cares about their customers. Highly recommended!"</div>
+                    <div class="t-author">
+                        <div class="t-avatar" style="background: #00b853;">EJ</div>
+                        <div>
+                            <div class="t-name">Emily Johnson</div>
+                            <div class="t-loc">Chicago, IL</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 8. NEWSLETTER (bg-main = #f7f4ef) -->
+<section class="newsletter-section bg-main">
+    <div class="container">
+        <div class="newsletter-card">
+            <div class="nl-blob-1"></div>
+            <div class="nl-blob-2"></div>
+            <h2 class="nl-title">Get Exclusive Offers</h2>
+            <p class="nl-desc">Subscribe to our newsletter and get 10% off your first order.<br>Plus, receive early access to sales and new arrivals.</p>
+            <form action="{% url 'newsletter_subscribe' %}" method="post" class="nl-form">
+                {% csrf_token %}
+                <input type="email" name="email" class="nl-input" placeholder="Enter your email address" required>
+                <button type="submit" class="nl-btn">Subscribe</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- JS for Countdown Timer -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Start from 08:43:22 as requested
+        let totalSeconds = (8 * 3600) + (43 * 60) + 22;
+        
+        const hEl = document.getElementById('t-hours');
+        const mEl = document.getElementById('t-mins');
+        const sEl = document.getElementById('t-secs');
+
+        function updateTimer() {
+            if(totalSeconds <= 0) return;
+            totalSeconds--;
+            
+            let h = Math.floor(totalSeconds / 3600);
+            let m = Math.floor((totalSeconds % 3600) / 60);
+            let s = totalSeconds % 60;
+            
+            hEl.textContent = String(h).padStart(2, '0');
+            mEl.textContent = String(m).padStart(2, '0');
+            sEl.textContent = String(s).padStart(2, '0');
+        }
+
+        setInterval(updateTimer, 1000);
+    });
+</script>
+
 {% endblock %}

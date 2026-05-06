@@ -22,9 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['online-shop-w8q3.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost 127.0.0.1 online-shop-w8q3.onrender.com').split()
 
 # --------------------------------------------------
 # Application Definition
@@ -35,8 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',  # இது ஒரே ஒரு தடவை மட்டும்!
-    'cloudinary_storage',           # இது staticfiles கீழே வரணும்
+    'django.contrib.staticfiles',  
+    'cloudinary_storage',           
     'cloudinary',
     'django.contrib.sitemaps',
     'progressive',
@@ -70,6 +70,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'shop.context_processors.cart_data',
+                'shop.context_processors.vapid_key',
+                'shop.context_processors.social_links',
             ],
         },
     },
@@ -77,19 +79,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'online_shop.wsgi.application'
 
-# --------------------------------------------------
 # Database
-# --------------------------------------------------
-# settings.py
+# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-    }
+    'default': dj_database_url.config(
+        default=f"postgres://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME')}",
+        conn_max_age=600
+    )
 }
 
 CLOUDINARY_STORAGE = {
@@ -123,7 +119,6 @@ USE_TZ = True
 
 # Static files
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATIC_URL = '/static/'
 
 # --------------------------------------------------
 # Static Files (CSS, JS)
@@ -171,3 +166,27 @@ PROGRESSIVE_APP_ICONS = [{'src': '/static/images/logo.png', 'sizes': '160x160'}]
 PROGRESSIVE_SERVICE_WORKER_PATH = BASE_DIR / 'static/js/serviceworker.js'
 
 APPEND_SLASH = False
+
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
+
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1:8001',
+    'http://localhost:8001',
+    'https://online-shop-w8q3.onrender.com',
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+
+# Social Media Links
+SOCIAL_LINKS = {
+    'instagram': 'https://www.instagram.com/sanzcart',
+    'twitter': 'https://twitter.com/sanzcart',
+    'facebook': 'https://www.facebook.com/sanzcart',
+    'pinterest': 'https://www.pinterest.com/sanzcart',
+}

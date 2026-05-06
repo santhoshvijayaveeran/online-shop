@@ -1,181 +1,162 @@
 {% extends 'base.html' %}
+{% block title %}Search — SANZCART{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <h2 class="section-title">Search</h2>
+<style>
+    .section-padding { padding: 60px 0 100px; }
+    .bg-main { background: var(--sanzcart-bg); }
+    .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; }
+    
+    .filter-card {
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 24px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    }
+    .filter-label { display:block; font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--sanzcart-muted); margin-bottom:8px; }
+    .form-control-sc {
+        width: 100%; padding: 12px 16px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); background: var(--sanzcart-bg);
+        color: var(--sanzcart-text); font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: 0.2s;
+    }
+    .form-control-sc:focus { border-color: var(--sanzcart-primary); background: var(--sanzcart-card); }
+    
+    .btn-primary-sc {
+        background: var(--sanzcart-primary); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 600; 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; cursor: pointer; text-decoration: none;
+    }
+    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); }
+    
+    .btn-outline-sc {
+        background: transparent; color: var(--sanzcart-text); padding: 8px 16px; border-radius: 8px; font-weight: 600; 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 1.5px solid var(--sanzcart-border); text-decoration: none;
+    }
+    .btn-outline-sc:hover { border-color: var(--sanzcart-primary); color: var(--sanzcart-primary); }
 
-    <!-- Filters -->
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:28px;">
-        <form method="GET" action="{% url 'search' %}">
-            <div class="row g-3 align-items-end">
+    /* Product Card Styles */
+    .product-card {
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+        overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; height: 100%;
+    }
+    .product-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
+    .pc-img-wrap { height: 260px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; }
+    .pc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .pc-badge {
+        position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .pc-badge.out { background: var(--sanzcart-dark); color: #fff; }
+    .pc-badge.low { background: #ff9800; color: #fff; }
+    .pc-wishlist {
+        position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: #fff;
+        display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer;
+    }
+    .pc-wishlist:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
+    .pc-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+    .pc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .pc-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--sanzcart-text); text-decoration: none; }
+    .pc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .pc-price { font-size: 1.2rem; font-weight: 800; }
+    
+    .empty-state { text-align: center; padding: 60px 20px; background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; }
+</style>
 
-                <!-- Keyword -->
-                <div class="col-md-3">
-                    <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Keyword</label>
-                    <input type="text" name="q" value="{{ query }}" class="input-min" placeholder="Search products...">
-                </div>
+<div class="section-padding bg-main">
+    <div class="container">
+        <h2 class="section-title">Shop Products</h2>
 
-                <!-- Category -->
-                <div class="col-md-3">
-                    <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">Category</label>
-                    <select name="category" class="input-min">
-                        <option value="">All Categories</option>
-                        {% for cat in categories %}
-                        <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Price Range Slider -->
-                <div class="col-md-4">
-                    <label style="display:block;font-weight:600;font-size:0.82rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray);">
-                        Price Range
-                    </label>
-                    <div style="padding:0 4px;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;">
-                            <span style="font-weight:700;">₹<span id="minDisplay">{{ min_price|default:0 }}</span></span>
-                            <span style="font-weight:700;">₹<span id="maxDisplay">{{ max_price|default:10000 }}</span></span>
+        <!-- Filters -->
+        <div class="filter-card">
+            <form method="GET" action="{% url 'search' %}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="filter-label">Keyword</label>
+                        <input type="text" name="q" value="{{ query }}" class="form-control-sc" placeholder="Search products...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-label">Category</label>
+                        <select name="category" class="form-control-sc">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_category %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="filter-label">Price Range</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="number" name="min_price" value="{{ min_price }}" class="form-control-sc" placeholder="$ Min" style="flex:1;">
+                            <span style="color:var(--sanzcart-muted);font-weight:700;">—</span>
+                            <input type="number" name="max_price" value="{{ max_price }}" class="form-control-sc" placeholder="$ Max" style="flex:1;">
                         </div>
-                        <div style="position:relative;height:6px;background:var(--gray-light);border-radius:4px;margin-bottom:16px;" id="sliderTrack">
-                            <div id="sliderRange" style="position:absolute;height:100%;background:var(--black);border-radius:4px;"></div>
-                            <input type="range" id="minSlider"
-                                   min="0" max="10000" step="50"
-                                   value="{{ min_price|default:0 }}"
-                                   style="position:absolute;width:100%;height:6px;opacity:0;cursor:pointer;z-index:3;top:0;">
-                            <input type="range" id="maxSlider"
-                                   min="0" max="10000" step="50"
-                                   value="{{ max_price|default:10000 }}"
-                                   style="position:absolute;width:100%;height:6px;opacity:0;cursor:pointer;z-index:3;top:0;">
-                            <div id="minThumb" style="position:absolute;width:18px;height:18px;background:var(--black);border-radius:50%;top:50%;transform:translateY(-50%);pointer-events:none;z-index:2;"></div>
-                            <div id="maxThumb" style="position:absolute;width:18px;height:18px;background:var(--black);border-radius:50%;top:50%;transform:translateY(-50%);pointer-events:none;z-index:2;"></div>
-                        </div>
-                        <input type="hidden" name="min_price" id="minPriceInput" value="{{ min_price|default:'' }}">
-                        <input type="hidden" name="max_price" id="maxPriceInput" value="{{ max_price|default:'' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn-primary-sc" style="width:100%;"><i class="fas fa-search"></i> Search</button>
                     </div>
                 </div>
+            </form>
+        </div>
 
-                <!-- Search Button -->
-                <div class="col-md-2">
-                    <button type="submit" class="btn-primary-min" style="width:100%;justify-content:center;padding:11px;">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                </div>
+        <!-- Sort & Results -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:10px;">
+            <p style="font-size:0.95rem; color:var(--sanzcart-muted); margin:0;">
+                <strong style="color:var(--sanzcart-text);font-family:var(--font-heading);">{{ products.count }}</strong> products found
+                {% if query %}for "<strong style="color:var(--sanzcart-primary);">{{ query }}</strong>"{% endif %}
+            </p>
+            {% if query or selected_category or min_price or max_price %}
+            <a href="{% url 'search' %}" style="font-size:0.85rem; color:var(--sanzcart-primary); font-weight:700; text-transform:uppercase; letter-spacing:1px; text-decoration:none;">Clear all ×</a>
+            {% endif %}
+        </div>
 
-            </div>
-        </form>
-    </div>
-
-    <!-- Results info -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <p style="font-size:0.88rem;color:var(--gray);margin:0;">
-            <strong style="color:var(--black);">{{ products.count }}</strong> products
-            {% if query %}for "<strong style="color:var(--black);">{{ query }}</strong>"{% endif %}
-        </p>
-        {% if query or category or min_price or max_price %}
-        <a href="{% url 'search' %}" style="font-size:0.85rem;color:var(--gray);text-decoration:none;"
-           onmouseover="this.style.color='var(--black)'" onmouseout="this.style.color='var(--gray)'">
-            Clear filters ×
-        </a>
-        {% endif %}
-    </div>
-
-    <!-- Products Grid -->
-    <div class="row g-3">
-        {% for product in products %}
-        <div class="col-6 col-md-3">
-            <div class="product-card h-100">
-                <div style="position:relative;">
-                    {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
-                    {% else %}
-                    <div style="height:200px;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🛍</div>
-                    {% endif %}
-                    {% if product.is_out_of_stock %}
-                    <span style="position:absolute;bottom:10px;left:10px;background:#e53e3e;color:white;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:700;">OUT OF STOCK</span>
-                    {% elif product.is_low_stock %}
-                    <span style="position:absolute;bottom:10px;left:10px;background:#f59e0b;color:white;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:700;">ONLY {{ product.stock }} LEFT</span>
-                    {% endif %}
-                    {% if request.user.is_authenticated %}
-                    <a href="{% url 'add_to_wishlist' product.id %}"
-                       style="position:absolute;top:10px;right:10px;background:white;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid var(--border);font-size:0.9rem;transition:0.2s;"
-                       onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--border)'">♡</a>
-                    {% endif %}
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h6 class="card-title">{{ product.name }}</h6>
-                    <p style="font-size:0.78rem;color:var(--gray);margin-bottom:6px;">{{ product.category }}</p>
-                    <p class="price mb-3">₹{{ product.price }}</p>
-                    <div class="d-flex gap-2 mt-auto">
-                        {% if product.is_out_of_stock %}
-                            {% if request.user.is_authenticated %}
-                            <a href="{% url 'notify_me' product.id %}" class="btn-outline-min flex-grow-1 justify-content-center" style="font-size:0.78rem;padding:7px;">
-                                🔔 Notify
-                            </a>
+        <!-- Grid -->
+        <div class="row g-4">
+            {% for product in products %}
+            <div class="col-md-6 col-lg-3">
+                <div class="product-card">
+                    <div class="pc-img-wrap">
+                        <a href="{% url 'product_detail' product.id %}" style="display:block; width:100%; height:100%;">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
                             {% else %}
-                            <button disabled style="background:var(--gray-light);color:var(--gray);border:none;border-radius:8px;padding:7px 10px;font-size:0.78rem;cursor:not-allowed;flex:1;">
-                                Out of Stock
-                            </button>
+                            <div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:#ddd;">🛍</div>
                             {% endif %}
-                        {% else %}
-                        <a href="{% url 'product_detail' product.id %}" class="btn-primary-min flex-grow-1 justify-content-center" style="font-size:0.8rem;padding:7px;">View</a>
-                        {% if request.user.is_authenticated %}
-                        <a href="{% url 'add_to_cart' product.id %}" class="btn-outline-min" style="padding:7px 10px;font-size:0.8rem;">
-                            <i class="fas fa-plus"></i>
                         </a>
+                        {% if product.is_out_of_stock %}
+                        <div class="pc-badge out">OUT OF STOCK</div>
+                        {% elif product.is_low_stock %}
+                        <div class="pc-badge low">ONLY {{ product.stock }} LEFT</div>
                         {% endif %}
+                        {% if request.user.is_authenticated %}
+                        <a href="{% url 'add_to_wishlist' product.id %}" class="pc-wishlist"><i class="far fa-heart"></i></a>
                         {% endif %}
+                    </div>
+                    <div class="pc-body">
+                        <div class="pc-cat">{{ product.category }}</div>
+                        <a href="{% url 'product_detail' product.id %}" class="pc-name">{{ product.name }}</a>
+                        <div class="pc-bottom mt-3">
+                            <div class="pc-price">${{ product.price }}</div>
+                            <div style="display:flex; gap:6px;">
+                                {% if product.is_out_of_stock %}
+                                    {% if request.user.is_authenticated %}
+                                    <a href="{% url 'notify_me' product.id %}" class="btn-outline-sc" style="padding:8px; font-size:0.85rem;" title="Notify Me">🔔</a>
+                                    {% else %}
+                                    <button disabled style="background:#eee; color:#999; border:none; border-radius:8px; padding:8px; font-size:0.85rem; cursor:not-allowed;"><i class="fas fa-ban"></i></button>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'product_detail' product.id %}" class="btn-outline-sc" style="padding:8px 12px; font-size:0.85rem;">View</a>
+                                    {% if request.user.is_authenticated %}
+                                    <a href="{% url 'add_to_cart' product.id %}" class="btn-primary-sc" style="padding:8px 12px; font-size:0.85rem;"><i class="fas fa-plus"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <div style="font-size:3rem; margin-bottom:16px;">🔍</div>
+                    <h5 style="font-family:var(--font-heading); font-weight:800; margin-bottom:8px;">No results found</h5>
+                    <p style="color:var(--sanzcart-muted); font-size:0.95rem;">Try adjusting your search or filters to find what you're looking for.</p>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        {% empty %}
-        <div class="col-12" style="text-align:center;padding:60px 20px;">
-            <div style="font-size:3rem;margin-bottom:16px;">🔍</div>
-            <h5 style="font-weight:700;margin-bottom:8px;">No results found</h5>
-            <p style="color:var(--gray);font-size:0.9rem;">Try different keywords or remove filters.</p>
-        </div>
-        {% endfor %}
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const minSlider = document.getElementById('minSlider');
-const maxSlider = document.getElementById('maxSlider');
-const minDisplay = document.getElementById('minDisplay');
-const maxDisplay = document.getElementById('maxDisplay');
-const minThumb = document.getElementById('minThumb');
-const maxThumb = document.getElementById('maxThumb');
-const sliderRange = document.getElementById('sliderRange');
-const minInput = document.getElementById('minPriceInput');
-const maxInput = document.getElementById('maxPriceInput');
-
-function updateSlider() {
-    const min = parseInt(minSlider.value);
-    const max = parseInt(maxSlider.value);
-    const total = parseInt(minSlider.max);
-
-    if (min >= max) {
-        minSlider.value = max - 50;
-        return;
-    }
-
-    const minPercent = (min / total) * 100;
-    const maxPercent = (max / total) * 100;
-
-    sliderRange.style.left = minPercent + '%';
-    sliderRange.style.width = (maxPercent - minPercent) + '%';
-    minThumb.style.left = 'calc(' + minPercent + '% - 9px)';
-    maxThumb.style.left = 'calc(' + maxPercent + '% - 9px)';
-
-    minDisplay.textContent = min;
-    maxDisplay.textContent = max;
-    minInput.value = min > 0 ? min : '';
-    maxInput.value = max < 10000 ? max : '';
-}
-
-minSlider.addEventListener('input', updateSlider);
-maxSlider.addEventListener('input', updateSlider);
-updateSlider();
-</script>
 {% endblock %}

@@ -164,7 +164,9 @@ class Order(models.Model):
         current_index = status_order.index(self.status) if self.status in status_order else -1
         result = []
         for i, (status, label, icon) in enumerate(steps):
-            if i < current_index:
+            if self.status == 'delivered':
+                state = 'done'
+            elif i < current_index:
                 state = 'done'
             elif i == current_index:
                 state = 'active'
@@ -390,3 +392,13 @@ class Newsletter(models.Model):
 
     def __str__(self):
         return self.email
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.TextField()
+    auth = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Push"
