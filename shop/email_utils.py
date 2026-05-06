@@ -14,7 +14,7 @@ def send_welcome_email(user):
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,
+        fail_silently=True,
         html_message=message,
     )
 
@@ -31,7 +31,7 @@ def send_wishlist_email(user, product):
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,
+        fail_silently=True,
         html_message=message,
     )
 
@@ -49,7 +49,7 @@ def send_review_email(user, product, rating):
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,
+        fail_silently=True,
         html_message=message,
     )
 
@@ -67,6 +67,6 @@ def send_order_confirmation_email(user, cart_items, total):
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,
+        fail_silently=True,
         html_message=message,
     )

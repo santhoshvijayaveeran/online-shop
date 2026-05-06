@@ -705,13 +705,19 @@ def place_order(request):
         coupon.used_count += 1
         coupon.save()
         del request.session['coupon_code']
-    send_order_confirmation_email(request.user, cart_items, total)
+    order_items = OrderItem.objects.filter(order=order)
+    try:
+        send_order_confirmation_email(request.user, order_items, total)
+    except Exception:
+        pass
+
     for item in cart_items:
         product = item.product
         product.stock -= item.quantity
         if product.stock < 0:
             product.stock = 0
         product.save()
+    
     cart_items.delete()
     messages.success(request, f'Order #{order.id} placed successfully!')
     return redirect('order_confirmation', order_id=order.id)
