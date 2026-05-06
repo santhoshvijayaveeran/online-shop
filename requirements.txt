@@ -33,5 +33,6 @@ idna==3.11
 # Payment (Razorpay)
 razorpay==2.0.1
 
-# PWA
-django-pwa==1.1.0pywebpush
+# PWA & Notifications
+django-pwa==1.1.0
+pywebpush==1.14.0
