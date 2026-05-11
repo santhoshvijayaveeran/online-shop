@@ -1,83 +1,119 @@
 {% extends 'base.html' %}
-{% block title %}Wishlist — SANZCART{% endblock %}
+{% block title %}My Wishlist — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .section-padding { padding: 60px 0 100px; }
-    .bg-main { background: var(--sanzcart-bg); }
-    .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; }
+    .wishlist-container { padding: 60px 0 100px; background: var(--sanzcart-bg); min-height: 90vh; }
     
-    /* Product Card Styles from Home */
-    .product-card {
-        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
-        overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; height: 100%;
+    .wishlist-header { 
+        display: flex; justify-content: space-between; align-items: flex-end; 
+        margin-bottom: 40px; border-bottom: 1.5px solid var(--sanzcart-border); padding-bottom: 24px;
     }
-    .product-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
-    .pc-img-wrap { height: 260px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; }
-    .pc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .pc-wishlist {
-        position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; 
-        background: var(--sanzcart-primary); color: #fff; display: flex; align-items: center; justify-content: center; 
-        transition: 0.2s; border: 1.5px solid var(--sanzcart-primary); cursor: pointer;
-    }
-    .pc-wishlist:hover { background: #d32f2f; border-color: #d32f2f; }
-    .pc-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
-    .pc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .pc-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--sanzcart-text); text-decoration: none; }
-    .pc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
-    .pc-price { font-size: 1.2rem; font-weight: 800; }
+    .wishlist-title { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 900; letter-spacing: -1.5px; margin: 0; }
     
-    .btn-primary-sc {
-        background: var(--sanzcart-primary); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; text-decoration: none;
-    }
-    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); }
+    .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
     
-    .empty-state { text-align: center; padding: 80px 20px; background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; }
-    .empty-icon { font-size: 4rem; margin-bottom: 16px; }
+    .wishlist-card { 
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px; 
+        overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column;
+    }
+    .wishlist-card:hover { transform: translateY(-8px); border-color: var(--sanzcart-primary); box-shadow: 0 15px 40px rgba(0,0,0,0.05); }
+    
+    .wc-img-wrap { height: 320px; background: #fafafa; position: relative; overflow: hidden; }
+    .wc-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+    .wishlist-card:hover .wc-img { transform: scale(1.05); }
+    
+    .wc-remove { 
+        position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; 
+        background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+        color: var(--sanzcart-text); cursor: pointer; border: 1px solid var(--sanzcart-border); z-index: 10; 
+        transition: 0.2s; text-decoration: none;
+    }
+    .wc-remove:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
+    
+    .wc-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .wc-cat { font-size: 0.7rem; font-weight: 800; color: var(--sanzcart-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .wc-name { font-family: var(--font-heading); font-size: 1.15rem; font-weight: 800; color: var(--sanzcart-text); text-decoration: none; margin-bottom: 12px; display: block; }
+    .wc-price { font-size: 1.3rem; font-weight: 900; color: var(--sanzcart-text); margin-bottom: 20px; }
+    
+    .wc-actions { display: flex; gap: 10px; margin-top: auto; }
+    .btn-move { flex: 1; background: var(--sanzcart-dark); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; text-decoration: none; }
+    .btn-move:hover { background: var(--sanzcart-primary); color: #fff; }
+
+    .share-btn { 
+        background: #fff; border: 1.5px solid var(--sanzcart-border); color: var(--sanzcart-text); 
+        padding: 8px 16px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; 
+        display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s;
+    }
+    .share-btn:hover { border-color: var(--sanzcart-text); }
+
+    .empty-wishlist { text-align: center; padding: 100px 20px; }
+    .empty-icon { font-size: 5rem; color: var(--sanzcart-border); margin-bottom: 32px; animation: heartbeat 1.5s infinite; }
+    @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 </style>
 
-<div class="section-padding bg-main">
+<div class="wishlist-container">
     <div class="container">
-        <h2 class="section-title">My Wishlist</h2>
+        <div class="wishlist-header">
+            <div>
+                <h2 class="wishlist-title">My Wishlist</h2>
+                <p style="color:var(--sanzcart-muted); font-weight:600; margin-top:8px;">{{ wishlist_items.count }} items saved to your collection</p>
+            </div>
+            <button class="share-btn" onclick="shareWishlist()"><i class="fas fa-share-alt"></i> Share Wishlist</button>
+        </div>
+
         {% if wishlist_items %}
-        <div class="row g-4">
+        <div class="wishlist-grid">
             {% for item in wishlist_items %}
-            <div class="col-md-6 col-lg-3">
-                <div class="product-card">
-                    <div class="pc-img-wrap">
-                        <a href="{% url 'product_detail' item.product.id %}" style="display:block; width:100%; height:100%;">
-                            {% if item.product.image %}
-                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
-                            {% else %}
-                            <div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:#ddd;">🛍</div>
-                            {% endif %}
-                        </a>
-                        <a href="{% url 'remove_from_wishlist' item.product.id %}" class="pc-wishlist" title="Remove from Wishlist"><i class="fas fa-heart"></i></a>
-                    </div>
-                    <div class="pc-body">
-                        <div class="pc-cat">{{ item.product.category|default:"General" }}</div>
-                        <a href="{% url 'product_detail' item.product.id %}" class="pc-name">{{ item.product.name }}</a>
-                        <div class="pc-bottom mt-3">
-                            <div class="pc-price">${{ item.product.price }}</div>
-                            {% if item.product.is_out_of_stock %}
-                            <button disabled style="background:#eee; color:#999; border:none; border-radius:8px; padding:10px 16px; font-weight:600; font-size:0.9rem;">Out of Stock</button>
-                            {% else %}
-                            <a href="{% url 'add_to_cart' item.product.id %}" class="btn-primary-sc" style="padding:10px 16px; font-size:0.9rem;"><i class="fas fa-shopping-bag"></i> Add</a>
-                            {% endif %}
-                        </div>
+            <div class="wishlist-card">
+                <a href="{% url 'remove_from_wishlist' item.product.id %}" class="wc-remove"><i class="fas fa-times"></i></a>
+                <div class="wc-img-wrap">
+                    <a href="{% url 'product_detail' item.product.id %}">
+                        {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" class="wc-img" alt="{{ item.product.name }}">
+                        {% else %}
+                        <div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:4rem; background:#eee;">🛍</div>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="wc-body">
+                    <div class="wc-cat">{{ item.product.category.name|default:"General" }}</div>
+                    <a href="{% url 'product_detail' item.product.id %}" class="wc-name">{{ item.product.name }}</a>
+                    <div class="wc-price">${{ item.product.price }}</div>
+                    
+                    <div class="wc-actions">
+                        {% if item.product.stock > 0 %}
+                        <a href="{% url 'add_to_cart' item.product.id %}" class="btn-move"><i class="fas fa-shopping-bag"></i> Move to Cart</a>
+                        {% else %}
+                        <button disabled class="btn-move" style="background:var(--sanzcart-border); color:var(--sanzcart-muted);">Out of Stock</button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">💖</div>
-            <h4 style="font-family:var(--font-heading); font-weight:700; margin-bottom:8px;">Your wishlist is empty</h4>
-            <p style="color:var(--sanzcart-muted); margin-bottom:24px;">Save items you love to buy them later.</p>
-            <a href="{% url 'search' %}" class="btn-primary-sc">Explore Products</a>
+        <div class="empty-wishlist">
+            <div class="empty-icon"><i class="fas fa-heart"></i></div>
+            <h3 style="font-family:var(--font-heading); font-weight:900; margin-bottom:12px;">Your wishlist is empty</h3>
+            <p style="color:var(--sanzcart-muted); font-size:1.1rem; margin-bottom:40px;">Looks like you haven't saved anything yet. Start exploring our latest collections!</p>
+            <a href="{% url 'search' %}" class="btn-primary-sc" style="padding:16px 48px;">Discover Products</a>
         </div>
         {% endif %}
     </div>
 </div>
+
+<script>
+function shareWishlist() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'My SanzCart Wishlist',
+            text: 'Check out the items I saved on SanzCart!',
+            url: window.location.href
+        });
+    } else {
+        alert("Wishlist link copied to clipboard!");
+        navigator.clipboard.writeText(window.location.href);
+    }
+}
+</script>
 {% endblock %}

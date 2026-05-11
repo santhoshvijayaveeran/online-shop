@@ -1,0 +1,47 @@
+{% load static %}
+
+<!-- Sanza AI Chatbot Widget -->
+<div id="sanza-toggle" aria-label="Open support chat" onclick="toggleSanza()">
+    <div id="sanza-badge">0</div>
+    <svg viewBox="0 0 24 24" width="28" height="28">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="white"/>
+    </svg>
+</div>
+
+<div id="sanza-widget" role="complementary" aria-label="Sanza Chat Support">
+    <div class="sanza-header">
+        <div class="sanza-avatar">S</div>
+        <div class="sanza-header-info">
+            <h3 class="sanza-title">Sanza</h3>
+            <div class="sanza-status-wrap">
+                <div class="sanza-status-dot"></div>
+                <span id="sanza-status">Online</span>
+            </div>
+        </div>
+        <div class="sanza-controls">
+            <button id="sanza-mute" class="sanza-control-btn" title="Mute/Unmute">🔊</button>
+            <button id="sanza-clear" class="sanza-control-btn" title="Clear History">🗑️</button>
+            <button onclick="toggleSanza()" class="sanza-control-btn" title="Close">✕</button>
+        </div>
+    </div>
+
+    <div id="sanza-messages">
+        <!-- Messages will be injected here -->
+    </div>
+
+    <div id="sanza-chips">
+        <!-- Suggested follow-ups will be injected here -->
+    </div>
+
+    <div class="sanza-input-wrap">
+        <textarea id="sanza-input" placeholder="Type a message..." rows="1"></textarea>
+        <button id="sanza-send" aria-label="Send message">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'sanza/sanza.css' %}">
+<script src="{% static 'sanza/sanza.js' %}"></script>

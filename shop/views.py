@@ -1,24 +1,26 @@
 import os
 import json
+import requests
 import random
 import time
+import logging
 from datetime import timedelta, date
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.db.models import Q, Sum, Avg, Count
-from django.db.models.functions import TruncDay, TruncMonth
+from django.views.decorators.http import require_http_methods
+from django.db.models import Q, Avg, Count
 from django.core.mail import send_mail
 
 import razorpay
+from pywebpush import webpush, WebPushException
 
 from .email_utils import (
     send_welcome_email,
@@ -30,16 +32,48 @@ from .models import (
     Category, Product, ProductVariant, Review, Wishlist, Cart, CartItem,
     Order, OrderItem, Payment, ReturnRequest,
     Profile, Coupon, CouponUsage, RecentlyViewed, BulkDiscount,
-    StockNotification, Question, Answer, Newsletter, PushSubscription
+    StockNotification, Question, Answer, Newsletter, PushSubscription,
+    SupportTicket, FAQ, ChatSession, ChatMessage, ChatLog, Notification
 )
+
+@login_required
+def mark_all_read(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
+
+@login_required
+def notifications_view(request):
+    notifs = Notification.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'shop/notifications.html', {'all_notifications': notifs})
+
+@login_required
+def mark_as_read(request, notif_id):
+    notif = get_object_or_404(Notification, id=notif_id, user=request.user)
+    notif.is_read = True
+    notif.save()
+    if notif.link:
+        return redirect(notif.link)
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 from .rate_limit import is_rate_limited, get_client_ip, get_remaining_time
+from .ai_assistant import SanzCartAI
+from fpdf import FPDF
+import io
 
+# ── LOGGING ──
+logger = logging.getLogger(__name__)
 
+# ── RAZORPAY CLIENT ──
+try:
+    razorpay_client = razorpay.Client(
+        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+    )
+except Exception as e:
+    logger.error(f"Razorpay Client initialization failed: {e}")
+    razorpay_client = None
 
-# Razorpay client
-razorpay_client = razorpay.Client(
-    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-)
+# ── VAPID CONFIG ──
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+VAPID_CLAIMS = {"sub": f"mailto:{os.getenv('VAPID_CLAIMS_EMAIL', '')}"}
 
 def get_shipping_charge(total):
     if total >= settings.FREE_SHIPPING_THRESHOLD:
@@ -226,6 +260,12 @@ def search(request):
     elif sort == 'popular':
         products = products.annotate(avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
 
+    ai_suggestions = None
+    if products.count() == 0 and query:
+        ai = SanzCartAI()
+        ai_res = ai.generate_response(f"The user searched for '{query}' but found no results. Suggest 3 related categories or product types we might have in our high-end fashion/electronics store. Format as a brief helpful message.", context_data={'username': request.user.username if request.user.is_authenticated else 'Guest'})
+        ai_suggestions = ai_res.get('reply', '')
+
     categories = Category.objects.all()
     context = {
         'products': products,
@@ -236,6 +276,7 @@ def search(request):
         'max_price': max_price,
         'sort': sort,
         'result_count': products.count(),
+        'ai_suggestions': ai_suggestions,
     }
     return render(request, 'shop/search.html', context)
 
@@ -330,21 +371,20 @@ def product_detail(request, product_id):
 
     bulk_discounts = product.bulk_discounts.all()
 
-    # Q&A
-    questions = Question.objects.filter(
-        product=product
-    ).select_related('user', 'answer__user').order_by('-created_at')
-
+    # AI Sentiment Mock
+    sentiment_score = 90 + (product.id % 10)
+    
     return render(request, 'shop/product_detail.html', {
         'product': product,
         'reviews': reviews,
         'avg_rating': avg_rating,
         'user_reviewed': user_reviewed,
-        'star_range': range(1, 6),
+        'user_purchased': user_purchased,
         'related_products': related_products,
         'bulk_discounts': bulk_discounts,
         'questions': questions,
-        'user_purchased': user_purchased,
+        'star_range': range(1, 6),
+        'sentiment_score': sentiment_score,
     })
 
 
@@ -403,132 +443,6 @@ def remove_from_cart(request, item_id):
     messages.success(request, 'Item removed from cart.')
     return redirect('cart')
 
-
-# ---------------- ADMIN DASHBOARD ----------------
-@staff_member_required
-def admin_dashboard(request):
-    today = timezone.now()
-    last_30_days = today - timedelta(days=30)
-    last_7_days = today - timedelta(days=7)
- 
-    # ── Summary Cards ──
-    total_revenue = Order.objects.filter(
-        status='delivered'
-    ).aggregate(total=Sum('total_price'))['total'] or 0
- 
-    total_orders = Order.objects.count()
- 
-    pending_orders = Order.objects.filter(status='pending').count()
- 
-    total_products = Product.objects.filter(is_active=True).count()
- 
-    monthly_revenue = Order.objects.filter(
-        status='delivered',
-        created_at__gte=last_30_days
-    ).aggregate(total=Sum('total_price'))['total'] or 0
- 
-    # ── Daily Revenue Chart (last 7 days) ──
-    daily_revenue = Order.objects.filter(
-        created_at__gte=last_7_days,
-        status__in=['delivered', 'processing', 'shipped']
-    ).annotate(
-        day=TruncDay('created_at')
-    ).values('day').annotate(
-        revenue=Sum('total_price'),
-        orders=Count('id')
-    ).order_by('day')
- 
-    chart_labels = []
-    chart_revenue = []
-    chart_orders = []
- 
-    for i in range(7):
-        day = (today - timedelta(days=6 - i)).date()
-        chart_labels.append(day.strftime('%d %b'))
-        day_data = next(
-            (d for d in daily_revenue if d['day'].date() == day), None
-        )
-        chart_revenue.append(float(day_data['revenue']) if day_data else 0)
-        chart_orders.append(day_data['orders'] if day_data else 0)
- 
-    # ── Monthly Revenue Chart (last 6 months) ──
-    monthly_data = Order.objects.filter(
-        status='delivered',
-        created_at__gte=today - timedelta(days=180)
-    ).annotate(
-        month=TruncMonth('created_at')
-    ).values('month').annotate(
-        revenue=Sum('total_price')
-    ).order_by('month')
- 
-    monthly_labels = [d['month'].strftime('%b %Y') for d in monthly_data]
-    monthly_values = [float(d['revenue']) for d in monthly_data]
- 
-    # ── Top Products ──
-    top_products = OrderItem.objects.values(
-        'product__name'
-    ).annotate(
-        total_sold=Sum('quantity'),
-        revenue=Sum('price')
-    ).order_by('-total_sold')[:5]
- 
-    top_product_labels = [p['product__name'][:20] for p in top_products]
-    top_product_values = [p['total_sold'] for p in top_products]
- 
-    # ── Orders by Status ──
-    status_data = Order.objects.values('status').annotate(
-        count=Count('id')
-    )
-    status_labels = [s['status'].title() for s in status_data]
-    status_values = [s['count'] for s in status_data]
- 
-    # ── Category Sales ──
-    category_sales = OrderItem.objects.values(
-        'product__category__name'
-    ).annotate(
-        total=Sum('quantity')
-    ).order_by('-total')[:5]
- 
-    cat_labels = [c['product__category__name'] for c in category_sales]
-    cat_values = [c['total'] for c in category_sales]
- 
-    # ── Recent Orders ──
-    recent_orders = Order.objects.select_related(
-        'user'
-    ).order_by('-created_at')[:10]
- 
-    # ── Low Stock Products ──
-    low_stock = Product.objects.filter(
-        stock__lte=5, is_active=True
-    ).order_by('stock')[:5]
- 
-    context = {
-        'total_revenue': total_revenue,
-        'total_orders': total_orders,
-        'pending_orders': pending_orders,
-        'total_products': total_products,
-        'monthly_revenue': monthly_revenue,
- 
-        'chart_labels': json.dumps(chart_labels),
-        'chart_revenue': json.dumps(chart_revenue),
-        'chart_orders': json.dumps(chart_orders),
- 
-        'monthly_labels': json.dumps(monthly_labels),
-        'monthly_values': json.dumps(monthly_values),
- 
-        'top_product_labels': json.dumps(top_product_labels),
-        'top_product_values': json.dumps(top_product_values),
- 
-        'status_labels': json.dumps(status_labels),
-        'status_values': json.dumps(status_values),
- 
-        'cat_labels': json.dumps(cat_labels),
-        'cat_values': json.dumps(cat_values),
- 
-        'recent_orders': recent_orders,
-        'low_stock': low_stock,
-    }
-    return render(request, 'shop/admin_dashboard.html', context)
 
 
 
@@ -870,33 +784,6 @@ def cancel_order(request, order_id):
 
 
 # ---------------- UPDATE ORDER STATUS (Admin) ----------------
-@staff_member_required
-def update_order_status(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        tracking_id = request.POST.get('tracking_id', '').strip()
-        order.status = new_status
-        if tracking_id:
-            order.tracking_id = tracking_id
-        order.save()
-        # ✅ இங்க add பண்ணு
-        send_push_notification(
-            order.user,
-            title=f'Order #{order.id} Update',
-            body=f'உங்க order status: {new_status}',
-            url=f'/order/track/{order.id}/'
-        )
-        if order.user.email:
-            send_mail(
-                f'Order #{order.id} Update',
-                f'உங்க order status {new_status} ஆச்சு!',
-                settings.DEFAULT_FROM_EMAIL,
-                [order.user.email]
-            )
-
-        messages.success(request, 'Order status updated!')
-        return redirect('manage_orders')
 
 
 # ---------------- APPLY COUPON ----------------
@@ -936,321 +823,12 @@ def remove_coupon(request):
     return redirect('checkout')
 
 def product_list(request):
-    products = Product.objects.filter(is_active=True)
-    return render(request, 'shop/product_list.html', {'products': products})
-
-# ---------------- ADD PRODUCT (Admin) ----------------
-@staff_member_required
-def add_product(request):
-    categories = Category.objects.all()
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        price = request.POST.get('price')
-        stock = request.POST.get('stock')
-        category_id = request.POST.get('category')
-        image = request.FILES.get('image')
-
-        category = get_object_or_404(Category, id=category_id)
-
-        Product.objects.create(
-            name=name,
-            description=description,
-            price=price,
-            stock=stock,
-            category=category,
-            image=image,
-            is_active=True
-        )
-        messages.success(request, f'Product "{name}" added successfully!')
-        return redirect('manage_products')
-
-    return render(request, 'shop/add_product.html', {'categories': categories})
+    return redirect('search')
 
 
-# ---------------- EDIT PRODUCT (Admin) ----------------
-@staff_member_required
-def edit_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    categories = Category.objects.all()
-    old_stock = product.stock
-
-    if request.method == 'POST':
-        product.name = request.POST.get('name')
-        product.description = request.POST.get('description')
-        product.price = request.POST.get('price')
-        new_stock = int(request.POST.get('stock', 0))
-        product.stock = new_stock
-        product.is_active = request.POST.get('is_active') == 'on'
-        category_id = request.POST.get('category')
-        product.category = get_object_or_404(Category, id=category_id)
-
-        if 'image' in request.FILES:
-            product.image = request.FILES['image']
-
-        product.save()
-
-        # Stock back in stock — notify users
-        if old_stock == 0 and new_stock > 0:
-            send_stock_notifications(product)
-
-        messages.success(request, f'Product "{product.name}" updated!')
-        return redirect('manage_products')
-
-    return render(request, 'shop/edit_product.html', {
-        'product': product,
-        'categories': categories
-    })
-
-# ---------------- DELETE PRODUCT (Admin) ----------------
-@staff_member_required
-def delete_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    if request.method == 'POST':
-        name = product.name
-        product.delete()
-        messages.success(request, f'Product "{name}" deleted!')
-    return redirect('manage_products')
 
 
-# ---------------- MANAGE PRODUCTS (Admin) ----------------
 
-@staff_member_required
-def manage_products(request):
-    products = Product.objects.select_related('category').order_by('-id')
-    categories = Category.objects.all()
-
-    # Filter
-    category_filter = request.GET.get('category', '')
-    stock_filter = request.GET.get('stock', '')
-    search = request.GET.get('q', '')
-
-    if search:
-        products = products.filter(name__icontains=search)
-    if category_filter:
-        products = products.filter(category__id=category_filter)
-    if stock_filter == 'out':
-        products = products.filter(stock=0)
-    elif stock_filter == 'low':
-        products = products.filter(stock__gt=0, stock__lte=5)
-
-    return render(request, 'shop/manage_products.html', {
-        'products': products,
-        'categories': categories,
-        'category_filter': category_filter,
-        'stock_filter': stock_filter,
-        'search': search,
-    })
-
-
-# ---------------- ADD CATEGORY (Admin) ----------------
-@staff_member_required
-def add_category(request):
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        if name:
-            Category.objects.get_or_create(name=name)
-            messages.success(request, f'Category "{name}" added!')
-    return redirect('manage_products')
-
-# ---------------- MANAGE ORDERS (Admin) ----------------
-@staff_member_required
-def manage_orders(request):
-    orders = Order.objects.select_related('user').prefetch_related(
-        'orderitem_set__product', 'payment'
-    ).order_by('-created_at')
-
-    # Filters
-    status_filter = request.GET.get('status', '')
-    search = request.GET.get('q', '')
-    date_filter = request.GET.get('date', '')
-
-    if status_filter:
-        orders = orders.filter(status=status_filter)
-    if search:
-        orders = orders.filter(user__username__icontains=search)
-    if date_filter == 'today':
-        from django.utils import timezone
-        today = timezone.now().date()
-        orders = orders.filter(created_at__date=today)
-    elif date_filter == 'week':
-        from django.utils import timezone
-        week_ago = timezone.now() - timedelta(days=7)
-        orders = orders.filter(created_at__gte=week_ago)
-
-    # Stats
-    total_revenue = sum(o.total_price for o in Order.objects.all())
-    pending_count = Order.objects.filter(status='pending').count()
-    processing_count = Order.objects.filter(status='processing').count()
-    delivered_count = Order.objects.filter(status='delivered').count()
-
-    return render(request, 'shop/manage_orders.html', {
-        'orders': orders,
-        'status_filter': status_filter,
-        'search': search,
-        'date_filter': date_filter,
-        'total_revenue': total_revenue,
-        'pending_count': pending_count,
-        'processing_count': processing_count,
-        'delivered_count': delivered_count,
-        'status_choices': Order.STATUS_CHOICES,
-    })
-
-
-# ---------------- ORDER DETAIL (Admin) ----------------
-@staff_member_required
-def admin_order_detail(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    order_items = OrderItem.objects.filter(order=order).select_related('product')
-    return_requests = ReturnRequest.objects.filter(order=order)
-
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        tracking_id = request.POST.get('tracking_id', '')
-        note = request.POST.get('note', '')
-
-        if new_status in dict(Order.STATUS_CHOICES):
-            order.status = new_status
-            if tracking_id:
-                order.tracking_id = tracking_id
-            order.save()
-            messages.success(request, f'Order #{order.id} updated to "{new_status}".')
-        return redirect('admin_order_detail', order_id=order.id)
-
-    return render(request, 'shop/admin_order_detail.html', {
-        'order': order,
-        'order_items': order_items,
-        'return_requests': return_requests,
-        'status_choices': Order.STATUS_CHOICES,
-    })
-
-
-# ---------------- HANDLE RETURN (Admin) ----------------
-@staff_member_required
-def handle_return(request, return_id):
-    return_req = get_object_or_404(ReturnRequest, id=return_id)
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'approve':
-            return_req.status = 'approved'
-            messages.success(request, f'Return #{return_id} approved.')
-        elif action == 'reject':
-            return_req.status = 'rejected'
-            messages.success(request, f'Return #{return_id} rejected.')
-        elif action == 'complete':
-            return_req.status = 'completed'
-            messages.success(request, f'Return #{return_id} completed.')
-        return_req.save()
-    return redirect('admin_order_detail', order_id=return_req.order.id)
-
-# ---------------- MANAGE RETURNS (Admin) ----------------
-@staff_member_required
-def manage_returns(request):
-    returns = ReturnRequest.objects.select_related(
-        'user', 'order'
-    ).order_by('-created_at')
-
-    status_filter = request.GET.get('status', '')
-    if status_filter:
-        returns = returns.filter(status=status_filter)
-
-    pending_count = ReturnRequest.objects.filter(status='pending').count()
-    approved_count = ReturnRequest.objects.filter(status='approved').count()
-    completed_count = ReturnRequest.objects.filter(status='completed').count()
-    rejected_count = ReturnRequest.objects.filter(status='rejected').count()
-
-    return render(request, 'shop/manage_returns.html', {
-        'returns': returns,
-        'status_filter': status_filter,
-        'pending_count': pending_count,
-        'approved_count': approved_count,
-        'completed_count': completed_count,
-        'rejected_count': rejected_count,
-    })
-
-
-# ---------------- SALES REPORT (Admin) ----------------
-@staff_member_required
-def sales_report(request):
-    from django.db.models.functions import TruncDate, TruncMonth
-    from django.utils import timezone
-
-    period = request.GET.get('period', 'week')
-
-    if period == 'today':
-        start_date = timezone.now().replace(hour=0, minute=0, second=0)
-    elif period == 'week':
-        start_date = timezone.now() - timedelta(days=7)
-    elif period == 'month':
-        start_date = timezone.now() - timedelta(days=30)
-    elif period == 'year':
-        start_date = timezone.now() - timedelta(days=365)
-    else:
-        start_date = timezone.now() - timedelta(days=7)
-
-    # Orders in period
-    orders = Order.objects.filter(
-        created_at__gte=start_date
-    ).exclude(status='cancelled')
-
-    # Daily sales data
-    daily_sales = orders.annotate(
-        date=TruncDate('created_at')
-    ).values('date').annotate(
-        revenue=Sum('total_price'),
-        count=Count('id')
-    ).order_by('date')
-
-    # Top selling products
-    top_products = OrderItem.objects.filter(
-        order__created_at__gte=start_date
-    ).exclude(
-        order__status='cancelled'
-    ).values(
-        'product__name'
-    ).annotate(
-        total_qty=Sum('quantity'),
-        total_revenue=Sum('price')
-    ).order_by('-total_qty')[:10]
-
-    # Category wise sales
-    category_sales = OrderItem.objects.filter(
-        order__created_at__gte=start_date
-    ).exclude(
-        order__status='cancelled'
-    ).values(
-        'product__category__name'
-    ).annotate(
-        total_revenue=Sum('price'),
-        total_qty=Sum('quantity')
-    ).order_by('-total_revenue')
-
-    # Summary stats
-    total_revenue = orders.aggregate(total=Sum('total_price'))['total'] or 0
-    total_orders = orders.count()
-    avg_order_value = round(total_revenue / total_orders, 2) if total_orders > 0 else 0
-    total_items_sold = OrderItem.objects.filter(
-        order__in=orders
-    ).aggregate(total=Sum('quantity'))['total'] or 0
-
-    # Chart data for JS
-    chart_labels = [str(d['date']) for d in daily_sales]
-    chart_revenue = [float(d['revenue']) for d in daily_sales]
-    chart_orders = [d['count'] for d in daily_sales]
-
-    return render(request, 'shop/sales_report.html', {
-        'period': period,
-        'total_revenue': total_revenue,
-        'total_orders': total_orders,
-        'avg_order_value': avg_order_value,
-        'total_items_sold': total_items_sold,
-        'daily_sales': daily_sales,
-        'top_products': top_products,
-        'category_sales': category_sales,
-        'chart_labels': chart_labels,
-        'chart_revenue': chart_revenue,
-        'chart_orders': chart_orders,
-    })
 
 # ---------------- NOTIFY ME ----------------
 @login_required
@@ -1273,27 +851,6 @@ def notify_me(request, product_id):
     return redirect('product_detail', product_id=product.id)
 
 
-# ---------------- SEND STOCK NOTIFICATIONS ----------------
-def send_stock_notifications(product):
-    """Call this when product stock is updated"""
-    notifications = StockNotification.objects.filter(
-        product=product, notified=False
-    ).select_related('user')
-
-    for notif in notifications:
-        try:
-            from django.core.mail import send_mail
-            send_mail(
-                subject=f'✅ "{product.name}" is back in stock!',
-                message=f'Hi {notif.user.username},\n\nGood news! "{product.name}" is now back in stock.\n\nShop now!',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[notif.user.email],
-                fail_silently=True,
-            )
-            notif.notified = True
-            notif.save()
-        except:
-            pass
 
 # ---------------- ASK QUESTION ----------------
 @login_required
@@ -1353,7 +910,6 @@ def newsletter_subscribe(request):
 
         if created:
             # Welcome email
-            from django.core.mail import send_mail
             try:
                 send_mail(
                     subject='Welcome to Our Newsletter!',
@@ -1387,38 +943,6 @@ def newsletter_unsubscribe(request, email):
     return redirect('home')
 
 
-# ---------------- MANAGE NEWSLETTER (Admin) ----------------
-@staff_member_required
-def manage_newsletter(request):
-    subscribers = Newsletter.objects.filter(
-        is_active=True
-    ).order_by('-subscribed_at')
-
-    # Send broadcast
-    if request.method == 'POST':
-        subject = request.POST.get('subject')
-        message = request.POST.get('message')
-        emails = list(subscribers.values_list('email', flat=True))
-
-        if subject and message and emails:
-            from django.core.mail import send_mail
-            try:
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=emails,
-                    fail_silently=True,
-                )
-                messages.success(request, f'Newsletter sent to {len(emails)} subscribers!')
-            except Exception as e:
-                messages.error(request, f'Error sending: {str(e)}')
-        return redirect('manage_newsletter')
-
-    return render(request, 'shop/manage_newsletter.html', {
-        'subscribers': subscribers,
-        'total': subscribers.count(),
-    })
 
 
 # ── OTP Store (in-memory) ──
@@ -1494,15 +1018,73 @@ def user_login(request):
                     return redirect('verify_2fa')
             else:
                 # Normal user — direct login
-                login(request, user)
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 messages.success(request, f'Welcome back, {user.username}!')
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
         else:
             messages.error(request, 'Invalid username or password.')
-            return render(request, 'shop/login.html')
-
     return render(request, 'shop/login.html')
+
+
+def send_otp(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required.'})
+
+        try:
+            user = User.objects.get(email=email)
+            otp = generate_otp()
+            _otp_store[user.username] = {
+                'otp': otp,
+                'expires': time.time() + 300,
+                'user_id': user.id,
+            }
+            try:
+                send_otp_email(email, otp)
+            except Exception:
+                # Fallback for dev mode
+                print(f'[DEV] Login OTP for {email}: {otp}')
+            
+            return JsonResponse({'status': 'success', 'message': 'OTP sent!'})
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User with this email not found.'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request.'})
+
+
+def otp_login(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        otp = request.POST.get('otp', '').strip()
+
+        try:
+            user = User.objects.get(email=email)
+            username = user.username
+            otp_data = _otp_store.get(username)
+
+            if not otp_data:
+                messages.error(request, 'OTP expired or not requested. Please try again.')
+                return redirect('login')
+
+            if time.time() > otp_data['expires']:
+                del _otp_store[username]
+                messages.error(request, 'OTP expired! Please request a new one.')
+                return redirect('login')
+
+            if otp == otp_data['otp']:
+                del _otp_store[username]
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, f'Welcome back, {user.username}!')
+                return redirect('home')
+            else:
+                messages.error(request, 'Invalid OTP.')
+                return redirect('login')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+            return redirect('login')
+
+    return redirect('login')
 
 
 # ── 2FA Verify View ──
@@ -1536,11 +1118,11 @@ def verify_2fa(request):
 
         if entered_otp == otp_data['otp']:
             user = User.objects.get(id=otp_data['user_id'])
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             del _otp_store[username]
             del request.session['pending_2fa_user']
             messages.success(request, f'Welcome, {user.username}!')
-            return redirect('admin_dashboard')
+            return redirect('/admin/')
         else:
             messages.error(request, 'Invalid OTP. Try again.')
 
@@ -1576,11 +1158,6 @@ def resend_otp(request):
 
     return redirect('verify_2fa')
 
-from pywebpush import webpush, WebPushException
-
-VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
-VAPID_CLAIMS = {"sub": f"mailto:{os.getenv('VAPID_CLAIMS_EMAIL', '')}"}
-
 # Subscribe endpoint
 def save_push_subscription(request):
     if request.method == 'POST':
@@ -1596,40 +1173,6 @@ def save_push_subscription(request):
         return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'method not allowed'}, status=405)
 
-# Send push to one user
-def send_push_notification(user, title, body, url='/'):
-    subscriptions = PushSubscription.objects.filter(user=user)
-    for sub in subscriptions:
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
-                },
-                data=json.dumps({"title": title, "body": body, "url": url}),
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims=VAPID_CLAIMS,
-            )
-        except WebPushException:
-            sub.delete()
-
-# Admin Broadcast
-def admin_broadcast(request):
-    if not request.user.is_staff:
-        return redirect('home')
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        body = request.POST.get('body')
-        url = request.POST.get('url', '/')
-        # Email + Push — எல்லா user-க்கும்
-        users = User.objects.filter(is_active=True)
-        for user in users:
-            send_push_notification(user, title, body, url)
-            if user.email:
-                send_mail(title, body, settings.DEFAULT_FROM_EMAIL, [user.email])
-        messages.success(request, f'{users.count()} users-க்கு notification அனுப்பினோம்!')
-        return redirect('admin_broadcast')
-    return render(request, 'shop/admin_broadcast.html')
 
 def order_status_api(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
@@ -1640,22 +1183,599 @@ def order_status_api(request, order_id):
         'estimated_delivery': order.estimated_delivery.strftime('%A, %b %d, %Y') if order.estimated_delivery else None,
     })
 
-def notify_back_in_stock(product):
-    from .models import StockNotification
-    notifications = StockNotification.objects.filter(product=product, notified=False)
-    for notif in notifications:
-        send_push_notification(
-            notif.user,
-            title=f'{product.name} Back in Stock!',
-            body='உங்களுக்கு பிடிச்ச product திரும்ப வந்துடுச்சு!',
-            url=f'/product/{product.id}/'
-        )
-        if notif.user.email:
-            send_mail(
-                f'{product.name} is Back!',
-                f'{product.name} திரும்ப available ஆச்சு. இப்பவே வாங்குங்க!',
-                settings.DEFAULT_FROM_EMAIL,
-                [notif.user.email]
+# ---------------- CHATBOT ENGINE ----------------
+
+@csrf_exempt
+def chatbot_query(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        user_msg = data.get('message', '').strip()
+        lang = data.get('language', 'en')
+    except:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    if not user_msg:
+        return JsonResponse({'reply': "I'm listening! How can I assist you today?"})
+
+    # Get or create session
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.create()
+        session_key = request.session.session_key
+    
+    chat_session, created = ChatSession.objects.get_or_create(
+        session_key=session_key,
+        defaults={'user': request.user if request.user.is_authenticated else None, 'language': lang}
+    )
+    
+    # Sync user and language
+    if not created:
+        if chat_session.language != lang:
+            chat_session.language = lang
+            chat_session.save()
+        if request.user.is_authenticated and chat_session.user != request.user:
+            chat_session.user = request.user
+            chat_session.save()
+    
+    # Get chat history for context (last 15 messages for AI logic)
+    history = ChatMessage.objects.filter(session=chat_session).order_by('-timestamp')[:15]
+    history_list = [{'sender': m.sender, 'message': m.message} for m in reversed(history)]
+    
+    # Contextual data for AI
+    user = request.user
+    latest_order_info = "No recent orders found."
+    latest_order_id = None
+    cart_count = 0
+    if user.is_authenticated:
+        latest_order = Order.objects.filter(user=user).order_by('-created_at').first()
+        if latest_order:
+            latest_order_id = latest_order.id
+            latest_order_info = f"Order #{latest_order.id} - Status: {latest_order.get_status_display()} (Placed: {latest_order.created_at.strftime('%Y-%m-%d')})"
+        
+        cart = Cart.objects.filter(user=user).first()
+        if cart:
+            cart_count = cart.cartitem_set.count()
+
+    # Get top 10 relevant FAQs
+    faqs = FAQ.objects.filter(is_active=True)[:10]
+    faq_data = [{'q': f.question, 'a': f.answer} for f in faqs]
+
+    context_data = {
+        'username': user.first_name or user.username if user.is_authenticated else 'Guest',
+        'latest_order': latest_order_info,
+        'latest_order_id': latest_order_id,
+        'cart_count': cart_count,
+        'is_logged_in': user.is_authenticated,
+        'faqs': faq_data
+    }
+
+    # Save user message first to ensure it's in history if AI takes long
+    ChatMessage.objects.create(session=chat_session, sender='user', message=user_msg)
+
+    # Use AI Assistant
+    try:
+        ai = SanzCartAI()
+        ai_response = ai.generate_response(user_msg, context_data, history_list, lang)
+        
+        # Save bot response
+        ChatMessage.objects.create(session=chat_session, sender='bot', message=ai_response.get('reply', ''))
+
+        return JsonResponse({
+            'reply': ai_response.get('reply', ''),
+            'quick_actions': ai_response.get('quick_actions', []),
+            'category': ai_response.get('category', 'General'),
+            'priority': ai_response.get('priority', 'medium')
+        })
+    except Exception as e:
+        logger.error(f"Chatbot View Error: {str(e)}")
+        return JsonResponse({
+            'reply': "I'm having a brief connection issue. Could you try again in a moment?",
+            'category': 'General',
+            'priority': 'medium',
+            'quick_actions': []
+        })
+
+@csrf_exempt
+def clear_chatbot_history(request):
+    session_key = request.session.session_key
+    if session_key:
+        ChatSession.objects.filter(session_key=session_key).delete()
+    return JsonResponse({'status': 'cleared'})
+
+@csrf_exempt
+
+@login_required
+def create_support_ticket(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            subject = data.get('subject', 'Support Request from Chat')
+            message = data.get('message', '')
+            category = data.get('category', 'General')
+            priority = data.get('priority', 'medium')
+            order_id = data.get('order_id')
+            
+            if not message:
+                return JsonResponse({'error': 'Message is required'}, status=400)
+            
+            order = None
+            if order_id:
+                order = Order.objects.filter(id=order_id, user=request.user).first()
+
+            ticket = SupportTicket.objects.create(
+                user=request.user,
+                email=request.user.email,
+                subject=subject,
+                message=message,
+                category=category,
+                priority=priority,
+                order=order
             )
-        notif.notified = True
-        notif.save()
+            return JsonResponse({
+                'success': True,
+                'message': f'Ticket #{ticket.id} created successfully! Our team will contact you soon.'
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'POST allowed'}, status=405)
+
+
+
+ 
+ 
+@login_required
+def download_invoice(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Security check
+    if order.user != request.user and not request.user.is_staff:
+        messages.error(request, "You are not authorized to access this invoice.")
+        return redirect('my_orders')
+
+    # Create PDF (A4)
+    # fpdf2 allows using a unicode-capable font if we have one, but we'll use helvetica 
+    # and "Rs." for maximum compatibility unless we can get the symbol to work.
+    # We'll try to use the symbol but fallback if needed.
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.set_margin(0)
+    pdf.add_page()
+    pdf.alias_nb_pages()
+
+    # Colors
+    c_dark = (26, 26, 26)      # #1a1a1a
+    c_red = (230, 57, 70)       # #e63946
+    c_bg = (247, 244, 239)      # #f7f4ef
+    c_border = (232, 228, 222)  # #e8e4de
+    c_muted = (154, 149, 144)   # #9a9590
+    c_white = (255, 255, 255)
+
+    # --- SECTION 1: HEADER BAR ---
+    pdf.set_fill_color(*c_dark)
+    pdf.rect(0, 0, 210, 35, "F")
+    
+    # Logo
+    pdf.set_xy(15, 10)
+    pdf.set_font("helvetica", "B", 26)
+    pdf.set_text_color(*c_white)
+    pdf.cell(pdf.get_string_width("SANZ"), 12, "SANZ", ln=0)
+    pdf.set_text_color(*c_red)
+    pdf.cell(50, 12, "CART", ln=0)
+    
+    pdf.set_xy(15, 22)
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(*c_muted)
+    pdf.cell(0, 5, "PREMIUM FASHION & LIFESTYLE", ln=0)
+    
+    # Invoice Title
+    pdf.set_xy(0, 10)
+    pdf.set_font("helvetica", "B", 18)
+    pdf.set_text_color(*c_white)
+    pdf.cell(195, 12, "INVOICE", ln=1, align="R")
+    
+    pdf.set_xy(0, 21)
+    pdf.set_font("helvetica", "B", 11)
+    pdf.set_text_color(*c_red)
+    pdf.cell(195, 5, f"NO: SC-{order.id:05d}", ln=1, align="R")
+
+    # --- SECTION 2: STATUS BADGE ---
+    pdf.set_y(42)
+    status_colors = {
+        'delivered': (34, 197, 94),   # Green
+        'processing': (245, 158, 11), # Orange
+        'cancelled': (230, 57, 70),  # Red
+        'pending': (154, 149, 144),   # Gray
+        'shipped': (59, 130, 246),    # Blue
+    }
+    status_bg = status_colors.get(order.status, (154, 149, 144))
+    
+    pdf.set_fill_color(*status_bg)
+    # Draw pill badge
+    # fpdf2 rect supports round_corners as radius in mm
+    pdf.rect(160, 42, 35, 7, "F")
+    
+    pdf.set_xy(160, 42)
+    pdf.set_font("helvetica", "B", 7)
+    pdf.set_text_color(*c_white)
+    pdf.cell(35, 7, f" {order.status.upper()}", align="C")
+
+    # --- SECTION 3: INFO CARDS ---
+    pdf.set_y(58)
+    
+    # Card background boxes
+    pdf.set_fill_color(*c_bg)
+    pdf.rect(15, 58, 87, 40, "F")
+    pdf.rect(108, 58, 87, 40, "F")
+    
+    # Left Card: Billed To
+    pdf.set_xy(20, 62)
+    pdf.set_font("helvetica", "B", 7)
+    pdf.set_text_color(*c_red)
+    pdf.cell(75, 4, "BILLED TO", ln=1)
+    
+    pdf.set_x(20)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.set_text_color(*c_dark)
+    pdf.cell(75, 6, f"{order.user.get_full_name() or order.user.username}".upper(), ln=1)
+    
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(*c_muted)
+    pdf.set_x(20)
+    pdf.cell(75, 4, f"{order.user.email}", ln=1)
+    
+    if hasattr(order.user, 'profile') and order.user.profile.phone:
+        pdf.set_x(20)
+        pdf.cell(75, 4, f"Ph: {order.user.profile.phone}", ln=1)
+    
+    if order.shipping_address:
+        pdf.set_x(20)
+        pdf.multi_cell(75, 3.5, f"Address: {order.shipping_address}", border=0)
+        
+    # Right Card: Order Info
+    pdf.set_xy(113, 62)
+    pdf.set_font("helvetica", "B", 7)
+    pdf.set_text_color(*c_red)
+    pdf.cell(75, 4, "ORDER INFORMATION", ln=1)
+    
+    pdf.set_font("helvetica", "B", 9)
+    pdf.set_text_color(*c_dark)
+    pdf.set_x(113)
+    pdf.cell(35, 6, "Order ID:", ln=0)
+    pdf.cell(42, 6, f"#{order.id}", ln=1, align="R")
+    
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(*c_muted)
+    pdf.set_x(113)
+    pdf.cell(35, 4, "Order Date:", ln=0)
+    pdf.cell(42, 4, f"{order.created_at.strftime('%d %b %Y')}", ln=1, align="R")
+    
+    pdf.set_x(113)
+    pdf.cell(35, 4, "Payment Method:", ln=0)
+    pdf.cell(42, 4, "Prepaid / Razorpay", ln=1, align="R")
+    
+    if order.estimated_delivery:
+        pdf.set_x(113)
+        pdf.cell(35, 4, "Delivery Est:", ln=0)
+        pdf.cell(42, 4, f"{order.estimated_delivery.strftime('%d %b %Y')}", ln=1, align="R")
+
+    # --- SECTION 4: DIVIDER ---
+    pdf.set_y(105)
+    pdf.set_draw_color(*c_red)
+    pdf.set_line_width(0.3)
+    pdf.line(15, 105, 195, 105)
+    
+    # --- SECTION 5: ITEMS TABLE ---
+    pdf.set_y(112)
+    
+    # Header
+    pdf.set_fill_color(*c_dark)
+    pdf.set_text_color(*c_white)
+    pdf.set_font("helvetica", "B", 8)
+    
+    pdf.set_x(15)
+    pdf.cell(10, 10, "#", border=0, fill=True, align="C")
+    pdf.cell(90, 10, "  PRODUCT DETAILS", border=0, fill=True)
+    pdf.cell(25, 10, "PRICE", border=0, fill=True, align="C")
+    pdf.cell(20, 10, "QTY", border=0, fill=True, align="C")
+    pdf.cell(35, 10, "SUBTOTAL  ", border=0, fill=True, align="R")
+    pdf.ln()
+    
+    # Rows
+    pdf.set_text_color(*c_dark)
+    pdf.set_font("helvetica", "", 8)
+    
+    items = order.orderitem_set.all()
+    for i, item in enumerate(items, 1):
+        bg = c_bg if i % 2 == 0 else c_white
+        pdf.set_fill_color(*bg)
+        
+        pdf.set_x(15)
+        # We use a rect for the row background to have more control
+        curr_y = pdf.get_y()
+        pdf.rect(15, curr_y, 180, 10, "F")
+        
+        pdf.cell(10, 10, str(i), align="C")
+        pdf.set_font("helvetica", "B", 8)
+        pdf.cell(90, 10, f"  {item.product.name}")
+        pdf.set_font("helvetica", "", 8)
+        pdf.cell(25, 10, f"Rs. {item.price}", align="C")
+        pdf.cell(20, 10, str(item.quantity), align="C")
+        pdf.cell(35, 10, f"Rs. {item.get_subtotal()}  ", align="R")
+        pdf.ln()
+        
+        # Row bottom divider
+        pdf.set_draw_color(*c_border)
+        pdf.set_line_width(0.1)
+        pdf.line(15, pdf.get_y(), 195, pdf.get_y())
+
+    # --- SECTION 6: TOTALS BOX ---
+    pdf.ln(5)
+    pdf.set_x(130)
+    pdf.set_fill_color(*c_bg)
+    pdf.rect(130, pdf.get_y(), 65, 30, "F")
+    
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(*c_muted)
+    
+    curr_total_y = pdf.get_y() + 2
+    pdf.set_xy(135, curr_total_y)
+    pdf.cell(30, 6, "Subtotal:", ln=0)
+    pdf.cell(25, 6, f"Rs. {order.get_total()}", ln=1, align="R")
+    
+    items_total = order.get_total()
+    shipping = order.total_price - items_total
+    if shipping > 0:
+        pdf.set_x(135)
+        pdf.cell(30, 6, "Shipping:", ln=0)
+        pdf.cell(25, 6, f"Rs. {shipping}", ln=1, align="R")
+    
+    pdf.set_draw_color(*c_border)
+    pdf.line(135, pdf.get_y() + 1, 190, pdf.get_y() + 1)
+    pdf.ln(3)
+    
+    pdf.set_x(135)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.set_text_color(*c_red)
+    pdf.cell(30, 8, "TOTAL AMOUNT:", ln=0)
+    pdf.cell(25, 8, f"Rs. {order.total_price}", ln=1, align="R")
+
+    # --- SECTION 7: THANK YOU BANNER ---
+    pdf.set_y(-45)
+    pdf.set_fill_color(*c_red)
+    pdf.rect(0, pdf.get_y(), 210, 18, "F")
+    
+    pdf.set_y(pdf.get_y() + 3)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.set_text_color(*c_white)
+    pdf.cell(0, 6, "Thank you for shopping with SanzCart! ", ln=1, align="C")
+    
+    pdf.set_font("helvetica", "", 7)
+    pdf.cell(0, 4, "For support: support@sanzcart.com  |  1800-SANZ-001", ln=1, align="C")
+
+    # --- SECTION 8: FOOTER ---
+    pdf.set_y(-18)
+    pdf.set_fill_color(*c_bg)
+    pdf.rect(0, 279, 210, 18, "F")
+    
+    pdf.set_y(283)
+    pdf.set_font("helvetica", "", 6)
+    pdf.set_text_color(*c_muted)
+    
+    pdf.set_x(15)
+    pdf.cell(50, 4, "SANZCART PREMIUM LIFESTYLE", ln=0)
+    pdf.cell(80, 4, "This is a computer-generated invoice. No signature required.", ln=0, align="C")
+    pdf.cell(50, 4, f"Page {pdf.page_no()} of {{nb}}", ln=1, align="R")
+
+    # Output
+    # In fpdf2, output() without arguments returns bytes or bytearray
+    try:
+        pdf_bytes = pdf.output()
+        if isinstance(pdf_bytes, bytearray):
+            pdf_bytes = bytes(pdf_bytes)
+        
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Invoice_SC_{order.id}.pdf"'
+        return response
+    except Exception as e:
+        # Fallback to simple PDF if premium fails
+        print(f"Premium PDF Error: {e}")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(0, 10, f"Invoice SC-{order.id}", ln=1)
+        pdf.set_font("helvetica", "", 12)
+        pdf.cell(0, 10, f"Order Status: {order.status}", ln=1)
+        pdf.cell(0, 10, f"Total: Rs. {order.total_price}", ln=1)
+        pdf_bytes = bytes(pdf.output())
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Invoice_SC_{order.id}.pdf"'
+        return response
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# AI CHATBOT APIs
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@login_required
+def order_status_api(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id, user=request.user)
+        items = [{
+            'name': item.product.name,
+            'quantity': item.quantity,
+            'price': float(item.price)
+        } for item in order.orderitem_set.all()]
+        
+        return JsonResponse({
+            'order_id': order.id,
+            'status': order.get_status_display(),
+            'items': items,
+            'placed_on': str(order.created_at),
+            'expected_delivery': str(order.estimated_delivery) if order.estimated_delivery else "Processing",
+            'tracking_number': order.tracking_id or "Not assigned",
+            'courier': "SanzCart Express"
+        })
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
+
+@login_required
+def my_orders_api(request):
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')[:5]
+    data = [{
+        'id': o.id,
+        'status': o.get_status_display(),
+        'total': float(o.total_price),
+        'date': o.created_at.strftime('%Y-%m-%d')
+    } for o in orders]
+    return JsonResponse({'orders': data})
+
+@csrf_exempt
+def verify_order_api(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        email = data.get('email')
+        try:
+            order = Order.objects.get(id=order_id, user__email=email)
+            return JsonResponse({'status': 'verified', 'order_id': order.id})
+        except Order.DoesNotExist:
+            return JsonResponse({'status': 'failed', 'message': 'Invalid Order ID or Email'}, status=400)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def product_search_api(request):
+    q = request.GET.get('q', '')
+    products = Product.objects.filter(
+        name__icontains=q, is_active=True
+    ).values(
+        'name', 'price', 'stock'
+    )[:5]
+    # Add rating and discount mock for now as they aren't directly in model as fields but methods
+    product_list = []
+    for p in products:
+        # Get actual product object for methods
+        obj = Product.objects.get(name=p['name'])
+        p['rating'] = obj.get_average_rating()
+        p['discount'] = "10% Off" # Mock or fetch from BulkDiscount
+        product_list.append(p)
+    return JsonResponse({'products': product_list})
+
+def active_offers_api(request):
+    now = timezone.now()
+    offers = Coupon.objects.filter(
+        is_active=True,
+        valid_to__gte=now
+    ).values(
+        'code', 'discount_value', 'min_order_amount', 'valid_to'
+    )
+    return JsonResponse({'offers': list(offers)})
+
+@login_required
+def return_status_api(request, order_id):
+    try:
+        ret = ReturnRequest.objects.get(order_id=order_id, user=request.user)
+        return JsonResponse({
+            'status': ret.get_status_display(),
+            'reason': ret.get_reason_display(),
+            'created_at': str(ret.created_at),
+            'refund_date': "7 days after approval"
+        })
+    except ReturnRequest.DoesNotExist:
+        return JsonResponse({'error': 'No return request found for this order'}, status=404)
+
+@csrf_exempt
+@login_required
+def create_return_api(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        reason = data.get('reason')
+        description = data.get('description', '')
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+            if ReturnRequest.objects.filter(order=order).exists():
+                return JsonResponse({'error': 'Return already requested'}, status=400)
+            
+            ReturnRequest.objects.create(
+                order=order, user=request.user,
+                reason=reason, description=description
+            )
+            return JsonResponse({'status': 'success', 'message': 'Return request submitted'})
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Order not found'}, status=404)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def log_chat_api(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        import uuid
+        ChatLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            session_id=data.get('session_id', uuid.uuid4()),
+            messages=data.get('messages', []),
+            intent_detected=data.get('intent', ''),
+            satisfaction_score=data.get('score', 0),
+            resolved=data.get('resolved', False),
+            escalated=data.get('escalated', False)
+        )
+        return JsonResponse({'status': 'logged'})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def sanza_chat_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+
+    try:
+        body = json.loads(request.body)
+        history = body.get('history', [])
+        language = body.get('language', 'en')
+        system_prompt = body.get('system_prompt', 'You are Sanza, a friendly customer support agent at SanzCart.')
+
+        # Groq API Configuration
+        api_key = os.environ.get('GROQ_API_KEY') or getattr(settings, 'GROQ_API_KEY', '')
+        if not api_key:
+            return JsonResponse({'error': 'GROQ_API_KEY missing'}, status=500)
+
+        # Build messages for Groq (OpenAI format)
+        messages = [{"role": "system", "content": f"{system_prompt}\nLANGUAGE: Respond only in {'Tamil' if language == 'ta' else 'English'}."}]
+        
+        for msg in history:
+            role = msg.get('role', '')
+            # Map 'model' to 'assistant' for Groq/OpenAI compatibility
+            groq_role = 'assistant' if role == 'model' else 'user'
+            text = msg.get('parts', [{}])[0].get('text', '').strip()
+            if text:
+                messages.append({"role": groq_role, "content": text})
+
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 512,
+            "top_p": 1
+        }
+
+        resp = requests.post(
+            url, 
+            json=payload, 
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            timeout=20
+        )
+        
+        if not resp.ok:
+            return JsonResponse({'error': f'Groq Error: {resp.text}'}, status=resp.status_code)
+
+        resp_json = resp.json()
+        reply = resp_json['choices'][0]['message']['content']
+
+        return JsonResponse({'reply': reply})
+
+    except requests.Timeout:
+        return JsonResponse({'error': 'Groq timeout'}, status=504)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+

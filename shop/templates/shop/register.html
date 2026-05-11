@@ -1,46 +1,142 @@
 {% extends 'base.html' %}
-{% block title %}Sign Up — SANZCART{% endblock %}
+{% block title %}Create Account — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .form-control-sc { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); background: var(--sanzcart-bg); color: var(--sanzcart-text); font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: 0.2s; }
-    .form-control-sc:focus { border-color: var(--sanzcart-primary); background: var(--sanzcart-card); }
-    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; cursor: pointer; text-decoration: none; }
-    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); color: #fff; }
+    .login-container {
+        min-height: 90vh; display: flex; align-items: center; justify-content: center; 
+        padding: 60px 16px; background: var(--sanzcart-bg);
+    }
+    .login-box {
+        width: 100%; max-width: 480px; background: var(--sanzcart-card); 
+        border: 1.5px solid var(--sanzcart-border); border-radius: 20px; padding: 40px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    }
+    .login-header { text-align: center; margin-bottom: 32px; }
+    .login-header h2 { 
+        font-family: var(--font-heading); font-size: 2.2rem; font-weight: 900; 
+        letter-spacing: -1.5px; margin-bottom: 8px; color: var(--sanzcart-text);
+    }
+    .login-header p { color: var(--sanzcart-muted); font-size: 0.95rem; font-weight: 500; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-weight: 800; font-size: 0.75rem; color: var(--sanzcart-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .checkbox-group { display: flex; align-items: flex-start; gap: 10px; margin-top: 20px; }
+    .checkbox-group input { width: 18px; height: 18px; accent-color: var(--sanzcart-primary); cursor: pointer; margin-top: 2px; }
+    .checkbox-label { font-size: 0.85rem; color: var(--sanzcart-muted); line-height: 1.5; cursor: pointer; }
+
+    .divider { display: flex; align-items: center; gap: 16px; margin: 30px 0; }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--sanzcart-border); }
+    .divider span { font-size: 0.75rem; font-weight: 800; color: var(--sanzcart-muted); text-transform: uppercase; }
+
+    .social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .social-btn {
+        padding: 12px; border-radius: 10px; border: 1.5px solid var(--sanzcart-border); 
+        background: #fff; color: var(--sanzcart-text); font-weight: 700; font-size: 0.85rem; 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .social-btn:hover { background: var(--sanzcart-bg); border-color: var(--sanzcart-text); }
 </style>
-<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;background:var(--sanzcart-bg);">
-    <div style="width:100%;max-width:440px;">
-        <div style="background:var(--sanzcart-card);border:1.5px solid var(--sanzcart-border);border-radius:14px;padding:40px;box-shadow:0 5px 15px rgba(0,0,0,.02);">
-            <div style="text-align:center;margin-bottom:28px;">
-                <div style="font-family:var(--font-heading);font-size:2.2rem;font-weight:900;margin-bottom:4px;letter-spacing:-1px;color:var(--sanzcart-text);"><span style="color:var(--sanzcart-primary)">SANZ</span>CART</div>
-                <p style="color:var(--sanzcart-muted);font-size:.95rem;font-weight:500;">Create your account</p>
+
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-header">
+            <h2>Join SanzCart</h2>
+            <p>Experience the future of luxury shopping</p>
+        </div>
+
+        <form method="POST" action="{% url 'register' %}">
+            {% csrf_token %}
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="first_name" class="form-control-sc" placeholder="John Doe" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control-sc" placeholder="john_doe" required>
+                    </div>
+                </div>
             </div>
-            <form method="POST">
-                {% csrf_token %}
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Username</label>
-                    <input type="text" name="username" required class="form-control-sc" placeholder="Choose a username">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Email</label>
-                    <input type="email" name="email" required class="form-control-sc" placeholder="your@email.com">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Password</label>
-                    <input type="password" name="password1" required class="form-control-sc" placeholder="Create password">
-                </div>
-                <div style="margin-bottom:28px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Confirm Password</label>
-                    <input type="password" name="password2" required class="form-control-sc" placeholder="Confirm password">
-                </div>
-                <button type="submit" class="btn-primary-sc" style="width:100%;justify-content:center;padding:14px;font-size:1rem;">
-                    Create Account <i class="fas fa-arrow-right ms-2"></i>
-                </button>
-            </form>
-            <div style="text-align:center;margin-top:24px;font-size:.95rem;color:var(--sanzcart-muted);font-weight:500;">
-                Already have an account?
-                <a href="{% url 'login' %}" style="color:var(--sanzcart-primary);font-weight:700;text-decoration:none;">Login</a>
+
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control-sc" placeholder="john@example.com" required>
             </div>
+
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="tel" name="phone" id="phoneInput" class="form-control-sc" placeholder="+91 98765 43210" required>
+                    <button type="button" onclick="verifyPhone()" class="btn-outline-sc" style="width:auto; padding:0 20px; font-size:0.8rem; border-radius:10px;" id="verifyBtn">Verify</button>
+                </div>
+                <p id="verifyStatus" style="font-size:0.75rem; font-weight:700; color:#00b853; margin-top:6px; display:none;">✓ Phone number verified</p>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password1" class="form-control-sc" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Confirm</label>
+                        <input type="password" name="password2" class="form-control-sc" placeholder="••••••••" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="terms" required>
+                <label for="terms" class="checkbox-label">
+                    I agree to the <a href="#" style="color:var(--sanzcart-primary);font-weight:700;text-decoration:none;">Terms of Service</a> and <a href="#" style="color:var(--sanzcart-primary);font-weight:700;text-decoration:none;">Privacy Policy</a>.
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary-sc" style="width:100%; margin-top:30px;">
+                Create Account <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>OR SIGN UP WITH</span>
+        </div>
+
+        <div class="social-row">
+            <button type="button" class="social-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="16"> Google
+            </button>
+            <button type="button" class="social-btn">
+                <i class="fab fa-apple" style="font-size:1.1rem;"></i> Apple
+            </button>
+        </div>
+
+        <div style="text-align:center; margin-top:32px; font-size:0.95rem; color:var(--sanzcart-muted); font-weight:500;">
+            Already a member? <a href="{% url 'login' %}" style="color:var(--sanzcart-primary); font-weight:800; text-decoration:none;">Login here</a>
         </div>
     </div>
 </div>
+
+<script>
+function verifyPhone() {
+    const phone = document.getElementById('phoneInput').value;
+    if (!phone) return alert("Please enter phone number");
+    
+    // Simulate OTP verification
+    const otp = prompt("Enter the 6-digit OTP sent to " + phone + "\n(Hint: 123456)");
+    if (otp === "123456") {
+        document.getElementById('verifyBtn').style.display = 'none';
+        document.getElementById('verifyStatus').style.display = 'block';
+        document.getElementById('phoneInput').readOnly = true;
+    } else if (otp !== null) {
+        alert("Invalid OTP. Please try again.");
+    }
+}
+</script>
 {% endblock %}

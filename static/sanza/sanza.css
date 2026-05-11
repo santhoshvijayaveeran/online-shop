@@ -1,0 +1,412 @@
+:root {
+    --sanza-red: #e63946;
+    --sanza-dark: #111111;
+    --sanza-white: #ffffff;
+    --sanza-gray: #f4f4f4;
+    --sanza-border: #e0e0e0;
+    --sanza-text: #1a1a1a;
+    --sanza-muted: #888888;
+    --sanza-radius: 20px;
+    --sanza-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+
+/* Toggle Button */
+#sanza-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: var(--sanza-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 99999;
+    box-shadow: var(--sanza-shadow);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#sanza-toggle:hover {
+    transform: scale(1.1);
+}
+
+#sanza-toggle img, #sanza-toggle svg {
+    width: 28px;
+    height: 28px;
+    fill: white;
+    color: white;
+}
+
+#sanza-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff0000;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Widget Container */
+#sanza-widget {
+    position: fixed;
+    bottom: 92px;
+    right: 24px;
+    width: 380px;
+    height: 600px;
+    background: white;
+    border-radius: var(--sanza-radius);
+    box-shadow: var(--sanza-shadow);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 99998;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+#sanza-widget.open {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Header */
+.sanza-header {
+    background: var(--sanza-dark);
+    color: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sanza-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--sanza-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.sanza-header-info {
+    flex: 1;
+}
+
+.sanza-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.sanza-status-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #4caf50;
+}
+
+.sanza-status-dot {
+    width: 8px;
+    height: 8px;
+    background: #4caf50;
+    border-radius: 50%;
+}
+
+.sanza-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.sanza-control-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.sanza-control-btn:hover {
+    opacity: 1;
+}
+
+/* Messages Area */
+#sanza-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #ffffff;
+}
+
+.sanza-bubble {
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-bubble {
+    background: var(--sanza-red);
+    color: white;
+    align-self: flex-end;
+    border-radius: 18px 18px 4px 18px;
+    max-width: 80%;
+}
+
+.assistant-bubble {
+    background: var(--sanza-gray);
+    color: var(--sanza-text);
+    align-self: flex-start;
+    border-radius: 18px 18px 18px 4px;
+    max-width: 85%;
+}
+
+.sanza-ticks {
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+    margin-left: 5px;
+}
+
+.sanza-feedback {
+    margin-top: 8px;
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.sanza-feedback span:hover {
+    transform: scale(1.2);
+}
+
+/* Typing Indicator */
+.typing {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+}
+
+.typing span {
+    width: 6px;
+    height: 6px;
+    background: #888;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing span:nth-child(1) { animation-delay: -0.32s; }
+.typing span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+}
+
+.sanza-typing-slow {
+    font-size: 11px;
+    color: #888;
+    margin-top: 5px;
+}
+
+/* Product Cards */
+.sanza-products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.sanza-product-card {
+    background: white;
+    border: 1px solid var(--sanza-border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.sanza-product-card img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+}
+
+.sanza-product-card .p-info {
+    padding: 8px;
+}
+
+.p-name {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.p-price {
+    color: var(--sanza-red);
+    font-weight: bold;
+    font-size: 13px;
+    margin: 4px 0;
+}
+
+.p-stock {
+    font-size: 10px;
+    margin-bottom: 8px;
+}
+
+.p-stock.in { color: #4caf50; }
+.p-stock.out { color: #f44336; }
+
+.p-btn {
+    display: block;
+    text-align: center;
+    background: var(--sanza-red);
+    color: white;
+    text-decoration: none;
+    font-size: 11px;
+    padding: 6px 0;
+    border-radius: 6px;
+}
+
+/* Suggested Chips */
+#sanza-chips {
+    padding: 0 16px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sanza-chip {
+    background: white;
+    border: 1px solid var(--sanza-red);
+    color: var(--sanza-red);
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sanza-chip:hover {
+    background: var(--sanza-red);
+    color: white;
+}
+
+/* Input Area */
+.sanza-input-wrap {
+    padding: 12px;
+    border-top: 1px solid var(--sanza-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#sanza-input {
+    flex: 1;
+    border: 1px solid var(--sanza-border);
+    border-radius: 20px;
+    padding: 10px 16px;
+    font-size: 14px;
+    outline: none;
+    resize: none;
+    max-height: 100px;
+}
+
+#sanza-send {
+    width: 36px;
+    height: 36px;
+    background: var(--sanza-red);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Escalation Form */
+.sanza-escalation-form {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sanza-escalation-form input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.sanza-escalation-form button {
+    background: var(--sanza-dark);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Toast */
+.sanza-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 100000;
+    transition: transform 0.3s;
+}
+
+.sanza-toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    #sanza-widget {
+        width: 100vw;
+        height: 100vh;
+        bottom: 0;
+        right: 0;
+        border-radius: 0;
+    }
+}

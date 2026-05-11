@@ -3,32 +3,8 @@
 
 {% block content %}
 <style>
-    /* UTILITIES */
-    .section-padding { padding: 80px 0; }
-    .bg-light-alt { background: #ffffff; }
-    .bg-main { background: var(--sanzcart-bg); }
-    
-    .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; text-align: center; }
-    
-    /* BUTTONS */
-    .btn-primary-sc {
-        background: var(--sanzcart-primary); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none;
-    }
-    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); }
-    
-    .btn-outline-sc {
-        background: transparent; color: var(--sanzcart-text); padding: 12px 28px; border-radius: 8px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 2px solid var(--sanzcart-border);
-    }
-    .btn-outline-sc:hover { border-color: var(--sanzcart-text); color: var(--sanzcart-text); }
-
-    /* HERO SECTION */
-    .hero-section {
-        background: var(--sanzcart-bg);
-        padding: 60px 0 100px;
-        overflow: hidden;
-    }
+    /* HERO SECTION SPECIFIC */
+    .hero-section { background: var(--sanzcart-bg); padding: 60px 0 100px; overflow: hidden; }
     .eyebrow-tag {
         display: inline-block; padding: 6px 14px; background: rgba(230,57,70,0.1); color: var(--sanzcart-primary);
         font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; border-radius: 30px; margin-bottom: 24px; text-transform: uppercase;
@@ -37,27 +13,15 @@
         font-family: var(--font-heading); font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800; line-height: 1.1; 
         letter-spacing: -2px; margin-bottom: 24px; color: var(--sanzcart-text);
     }
-    .hero-subtitle {
-        font-size: 1.1rem; color: var(--sanzcart-muted); margin-bottom: 40px; max-width: 450px; line-height: 1.6;
-    }
-    .hero-stats {
-        display: flex; gap: 32px; margin-top: 50px; flex-wrap: wrap;
-    }
+    .hero-subtitle { font-size: 1.1rem; color: var(--sanzcart-muted); margin-bottom: 40px; max-width: 450px; line-height: 1.6; }
+    .hero-stats { display: flex; gap: 32px; margin-top: 50px; flex-wrap: wrap; }
     .stat-item h4 { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
     .stat-item p { font-size: 0.85rem; color: var(--sanzcart-muted); margin: 0; font-weight: 500; }
 
-    /* HERO FEATURED CARD */
     .hero-featured-card {
-        background: var(--sanzcart-card);
-        border: 1.5px solid var(--sanzcart-border);
-        border-radius: 14px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.06);
-        max-width: 380px;
-        margin: 0 auto;
-        transform: rotate(2deg);
-        transition: transform 0.3s;
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+        overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.06); max-width: 380px; margin: 0 auto;
+        transform: rotate(2deg); transition: transform 0.3s;
     }
     .hero-featured-card:hover { transform: rotate(0deg) translateY(-10px); }
     .hero-card-top-bar { height: 6px; background: var(--sanzcart-primary); width: 100%; }
@@ -81,82 +45,30 @@
     .btn-add-cart:hover { background: var(--sanzcart-primary); }
 
     /* CATEGORIES GRID */
-    .cat-card {
-        background: var(--sanzcart-card);
-        border: 1.5px solid var(--sanzcart-border);
-        border-radius: 14px;
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        transition: 0.3s;
-        cursor: pointer;
-    }
+    .cat-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 24px; display: flex; align-items: center; gap: 20px; transition: 0.3s; cursor: pointer; }
     .cat-card:hover { border-color: var(--sanzcart-primary); transform: translateY(-4px); box-shadow: 0 10px 24px rgba(230,57,70,0.08); }
-    .cat-icon-box {
-        width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-    }
+    .cat-icon-box { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     .cat-info { flex: 1; }
     .cat-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
     .cat-count { font-size: 0.85rem; color: var(--sanzcart-muted); }
     .cat-arrow { color: var(--sanzcart-border); transition: 0.3s; }
     .cat-card:hover .cat-arrow { color: var(--sanzcart-primary); transform: translateX(4px); }
 
-    /* FEATURED PRODUCTS */
-    .product-card {
-        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
-        overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; height: 100%;
-    }
-    .product-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
-    .pc-img-wrap { height: 260px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; }
-    .pc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .pc-badge {
-        position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .pc-badge.new { background: var(--sanzcart-dark); color: #fff; }
-    .pc-badge.sale { background: var(--sanzcart-primary); color: #fff; }
-    .pc-badge.hot { background: #ff9800; color: #fff; }
-    .pc-wishlist {
-        position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: #fff;
-        display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); opacity: 0; transform: scale(0.8); transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer;
-    }
-    .product-card:hover .pc-wishlist { opacity: 1; transform: scale(1); }
-    .pc-wishlist:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
-    .pc-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
-    .pc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .pc-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--sanzcart-text); }
-    .pc-rating { display: flex; gap: 2px; color: #ffb400; font-size: 0.8rem; margin-bottom: 16px; }
-    .pc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
-    .pc-price { font-size: 1.2rem; font-weight: 800; }
-    .pc-add-btn {
-        width: 40px; height: 40px; border-radius: 8px; background: var(--sanzcart-bg); border: 1.5px solid var(--sanzcart-border);
-        display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); transition: 0.2s; cursor: pointer;
-    }
-    .pc-add-btn:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
-
     /* PROMO BANNER */
-    .promo-card {
-        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px;
-        padding: 60px; overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.03);
-    }
+    .promo-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px; padding: 60px; overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.03); }
     .promo-headline { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; line-height: 1.2; }
     .timer-wrap { display: flex; gap: 16px; margin-bottom: 32px; }
     .timer-box { width: 70px; height: 70px; background: var(--sanzcart-bg); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .timer-num { font-size: 1.6rem; font-weight: 800; color: var(--sanzcart-primary); line-height: 1; }
     .timer-label { font-size: 0.65rem; font-weight: 700; color: var(--sanzcart-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
     
-    .feature-tile {
-        background: var(--sanzcart-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px;
-    }
+    .feature-tile { background: var(--sanzcart-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; }
     .ft-icon { width: 48px; height: 48px; background: rgba(230,57,70,0.1); color: var(--sanzcart-primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     .ft-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
     .ft-desc { font-size: 0.8rem; color: var(--sanzcart-muted); }
 
     /* TESTIMONIALS */
-    .testimonial-card {
-        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
-        padding: 32px; height: 100%; transition: 0.3s;
-    }
+    .testimonial-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 32px; height: 100%; transition: 0.3s; }
     .testimonial-card:hover { border-color: var(--sanzcart-primary); transform: translateY(-4px); }
     .t-rating { color: #ffb400; font-size: 1rem; margin-bottom: 20px; display: flex; gap: 4px; }
     .t-quote { font-size: 1.05rem; line-height: 1.6; color: var(--sanzcart-text); margin-bottom: 30px; font-style: italic; }
@@ -167,9 +79,7 @@
 
     /* NEWSLETTER */
     .newsletter-section { padding: 0 0 80px; }
-    .newsletter-card {
-        background: var(--sanzcart-dark); color: #fff; border-radius: 20px; padding: 80px 40px; text-align: center; position: relative; overflow: hidden;
-    }
+    .newsletter-card { background: var(--sanzcart-dark); color: #fff; border-radius: 20px; padding: 80px 40px; text-align: center; position: relative; overflow: hidden; }
     .nl-blob-1 { position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: rgba(230,57,70,0.2); filter: blur(60px); border-radius: 50%; }
     .nl-blob-2 { position: absolute; bottom: -100px; right: -100px; width: 300px; height: 300px; background: rgba(230,57,70,0.15); filter: blur(60px); border-radius: 50%; }
     .nl-title { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; position: relative; z-index: 2; }
@@ -180,11 +90,8 @@
         color: #fff; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.2s;
     }
     .nl-input:focus { border-color: var(--sanzcart-primary); background: rgba(255,255,255,0.1); }
-    .nl-btn {
-        background: var(--sanzcart-primary); color: #fff; padding: 0 32px; border-radius: 12px; border: none; font-weight: 600;
-        font-family: var(--font-body); cursor: pointer; transition: 0.2s; font-size: 1rem;
-    }
-    .nl-btn:hover { background: #d32f2f; }
+    .nl-btn { background: var(--sanzcart-primary); color: #fff; padding: 0 32px; border-radius: 12px; border: none; font-weight: 600; font-family: var(--font-body); cursor: pointer; transition: 0.2s; font-size: 1rem; }
+    .nl-btn:hover { background: var(--sanzcart-primary-hover); }
 
     @media(max-width: 991px) {
         .promo-card { padding: 40px 30px; }
@@ -235,29 +142,61 @@
                     <div class="hero-card-top-bar"></div>
                     <div class="hero-card-img">
                         {% if featured.image %}
-                        <img src="{{ featured.image.url }}" alt="{{ featured.name }}">
+                        <img src="{{ featured.image.url }}" alt="{{ featured.name }}" loading="lazy">
                         {% else %}
                         <div style="font-size: 5rem; color: #ddd;">🛍</div>
                         {% endif %}
                         <div class="stock-pill">
-                            <span class="stock-dot"></span> In Stock
+                            <span class="stock-dot"></span> Flash Sale Live
                         </div>
                     </div>
                     <div class="hero-card-body">
-                        <div class="hc-cat">{{ featured.category.name|default:"Premium" }}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <div class="hc-cat">{{ featured.category.name|default:"Premium" }}</div>
+                            <div style="font-size:0.7rem; font-weight:800; color:var(--sanzcart-primary);" id="hero-countdown">04:22:15</div>
+                        </div>
                         <h3 class="hc-name">{{ featured.name|truncatechars:35 }}</h3>
                         <div class="hc-price-row">
                             <div class="hc-price">${{ featured.price }}</div>
-                            {% if featured.old_price %}
-                            <div class="hc-price-old">${{ featured.old_price }}</div>
-                            {% endif %}
+                            <div class="hc-price-old">$99.00</div>
                         </div>
-                        <a href="{% url 'add_to_cart' featured.id %}" class="btn-add-cart">Add to Cart <i class="fas fa-shopping-bag ms-2"></i></a>
+                        <a href="{% url 'add_to_cart' featured.id %}" class="btn-add-cart">Claim Deal Now <i class="fas fa-bolt ms-2"></i></a>
                     </div>
                 </div>
                 {% endwith %}
                 {% endif %}
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- RECENTLY VIEWED & FOR YOU -->
+{% if recently_viewed %}
+<section class="section-padding" style="padding-bottom:0;">
+    <div class="container">
+        <h2 class="section-title" style="text-align:left; font-size:1.5rem; margin-bottom:24px;">Recently Viewed</h2>
+        <div class="horizontal-scroll">
+            {% for item in recently_viewed %}
+            <a href="{% url 'product_detail' item.product.id %}" style="text-decoration:none;">
+                <div class="rec-card" style="min-width:160px; max-width:160px;">
+                    <img src="{{ item.product.image.url }}" style="width:100%; height:160px; object-fit:cover; border-radius:12px; border:1px solid var(--sanzcart-border);">
+                    <div style="font-family:var(--font-heading); font-weight:700; font-size:0.85rem; color:var(--sanzcart-text); margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ item.product.name }}</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="section-padding">
+    <div class="container">
+        <div style="background:var(--sanzcart-dark); border-radius:20px; padding:40px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:24px;">
+            <div>
+                <h3 style="font-family:var(--font-heading); font-weight:800; margin:0;">Personalized For You</h3>
+                <p style="color:#aaa; margin:8px 0 0;">Products curated based on your interests.</p>
+            </div>
+            <a href="{% url 'search' %}" class="btn-primary-sc">Discover More</a>
         </div>
     </div>
 </section>
@@ -334,7 +273,7 @@
                 <div class="product-card">
                     <div class="pc-img-wrap">
                         {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
                         {% else %}
                         <div style="font-size: 3rem; color: #ddd;">🛍</div>
                         {% endif %}
@@ -531,6 +470,20 @@
         }
 
         setInterval(updateTimer, 1000);
+
+        // Hero Countdown
+        let heroSeconds = (4 * 3600) + (22 * 60) + 15;
+        const heroEl = document.getElementById('hero-countdown');
+        if(heroEl) {
+            setInterval(() => {
+                if(heroSeconds <= 0) return;
+                heroSeconds--;
+                let h = Math.floor(heroSeconds / 3600);
+                let m = Math.floor((heroSeconds % 3600) / 60);
+                let s = heroSeconds % 60;
+                heroEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }, 1000);
+        }
     });
 </script>
 

@@ -36,3 +36,15 @@ razorpay==2.0.1
 # PWA & Notifications
 django-pwa==1.1.0
 pywebpush==1.14.0
+
+# PDF Generation
+fpdf2==2.8.7
+
+# Sanza Chatbot
+google-generativeai
+sentence-transformers
+faiss-cpu
+channels
+channels-redis
+django-cors-headers
+tiktoken

@@ -6,8 +6,15 @@ from .models import Newsletter, Question, Answer
 from .models import (
     Category, Product, Review, Wishlist,
     Profile, Cart, CartItem, Order, OrderItem,
-    Coupon, CouponUsage
+    Coupon, CouponUsage, ChatLog, Notification
 )
+
+@admin.register(ChatLog)
+class ChatLogAdmin(admin.ModelAdmin):
+    list_display = ('session_id', 'user', 'intent_detected', 'satisfaction_score', 'resolved', 'escalated', 'created_at')
+    list_filter = ('resolved', 'escalated', 'created_at')
+    search_fields = ('session_id', 'user__username', 'intent_detected')
+    readonly_fields = ('session_id', 'created_at', 'updated_at')
 
 # ── Basic Models ──────────────────────────────────────────
 admin.site.register(Category)
@@ -20,6 +27,7 @@ admin.site.register(CouponUsage)
 admin.site.register(Newsletter)
 admin.site.register(Question)
 admin.site.register(Answer)
+admin.site.register(Notification)
 
 # ── Product Admin ─────────────────────────────────────────
 @admin.register(Product)

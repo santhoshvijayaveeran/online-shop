@@ -2,10 +2,6 @@
 {% block title %}My Cart — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .section-padding { padding: 60px 0 100px; }
-    .bg-main { background: var(--sanzcart-bg); }
-    .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; }
-    
     .cart-item-card {
         background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
         padding: 20px; margin-bottom: 16px; display: flex; gap: 20px; align-items: center;
@@ -23,24 +19,31 @@
         padding: 30px; position: sticky; top: 100px; box-shadow: 0 10px 30px rgba(0,0,0,0.04);
     }
     
-    .btn-primary-sc {
-        background: var(--sanzcart-primary); color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; width: 100%; text-decoration: none;
-    }
-    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); }
-    
-    .btn-outline-sc {
-        background: transparent; color: var(--sanzcart-text); padding: 14px 28px; border-radius: 8px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 1.5px solid var(--sanzcart-border); width: 100%; text-decoration: none;
-    }
-    .btn-outline-sc:hover { border-color: var(--sanzcart-text); }
-
     .form-select-sc {
         padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); background: var(--sanzcart-bg);
         color: var(--sanzcart-text); font-family: var(--font-body); outline: none; transition: 0.2s; cursor: pointer;
     }
     .form-select-sc:focus { border-color: var(--sanzcart-primary); }
     
+    .price-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; color: var(--sanzcart-muted); }
+    .price-row.total { margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--sanzcart-border); color: var(--sanzcart-text); }
+    .price-row.discount { color: #00b853; font-weight: 600; }
+    
+    .coupon-area { margin-bottom: 24px; position: relative; }
+    .coupon-input { 
+        width: 100%; padding: 12px 16px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); 
+        background: var(--sanzcart-bg); font-size: 0.9rem; outline: none; transition: 0.2s;
+    }
+    .coupon-input:focus { border-color: var(--sanzcart-primary); }
+    .coupon-btn { 
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%); 
+        background: var(--sanzcart-text); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+    }
+
+    .cross-sell-card {
+        min-width: 180px; max-width: 180px; background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; padding: 12px; transition: 0.3s;
+    }
+    .cross-sell-card:hover { border-color: var(--sanzcart-primary); }
     .empty-state { text-align: center; padding: 80px 20px; background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; }
 </style>
 
@@ -63,12 +66,12 @@
                     <div style="flex:1;">
                         <a href="{% url 'product_detail' item.product.id %}" class="cart-item-title">{{ item.product.name }}</a>
                         {% if item.variant %}
-                        <div style="font-size:0.85rem; color:var(--sanzcart-muted); margin-top:4px;">{{ item.variant.size }} {{ item.variant.color }}</div>
+                        <div style="font-size:0.85rem; color:var(--sanzcart-muted); margin-top:4px;">{{ item.variant.size }} / {{ item.variant.color }}</div>
                         {% endif %}
+                        <div style="font-size:0.75rem; color:var(--sanzcart-muted); margin-top:6px; display:flex; align-items:center; gap:5px;">
+                            <i class="far fa-calendar-alt"></i> Delivery by <strong style="color:var(--sanzcart-text);">Oct 12 - Oct 15</strong>
+                        </div>
                         <div class="cart-item-price">${{ item.get_subtotal }}</div>
-                        {% if item.get_bulk_discount %}
-                        <div style="font-size:0.75rem; color:#00b853; font-weight:700; margin-top:4px;"><i class="fas fa-tag"></i> Bulk discount applied!</div>
-                        {% endif %}
                     </div>
                     <div style="display:flex; align-items:center; gap:16px;">
                         <form method="POST" action="{% url 'update_cart' item.id %}" style="margin:0;">
@@ -79,7 +82,10 @@
                                 {% endfor %}
                             </select>
                         </form>
-                        <a href="{% url 'remove_from_cart' item.id %}" style="color:#d32f2f; font-size:1.1rem; padding:8px; border-radius:8px; background:rgba(230,57,70,0.1); transition:0.2s;" title="Remove from Cart" onmouseover="this.style.background='rgba(230,57,70,0.2)'" onmouseout="this.style.background='rgba(230,57,70,0.1)'"><i class="fas fa-trash-alt"></i></a>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <a href="#" class="btn-save-later" style="color:var(--sanzcart-muted); font-size:0.85rem; text-decoration:none; font-weight:600;"><i class="far fa-bookmark"></i> Save</a>
+                            <a href="{% url 'remove_from_cart' item.id %}" style="color:#d32f2f; font-size:1.1rem; padding:8px; border-radius:8px; background:rgba(230,57,70,0.1); transition:0.2s;" title="Remove from Cart" onmouseover="this.style.background='rgba(230,57,70,0.2)'" onmouseout="this.style.background='rgba(230,57,70,0.1)'"><i class="fas fa-trash-alt"></i></a>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -89,20 +95,27 @@
                 <div class="summary-card">
                     <h6 style="font-family:var(--font-heading); font-weight:800; font-size:1.2rem; margin-bottom:24px;">Order Summary</h6>
                     
-                    <div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:1.05rem; color:var(--sanzcart-muted);">
-                        <span>Subtotal</span>
-                        <span style="font-weight:700; color:var(--sanzcart-text);">${{ total }}</span>
+                    <div class="coupon-area">
+                        <input type="text" placeholder="Coupon Code" class="coupon-input">
+                        <button class="coupon-btn">APPLY</button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-size:1.05rem; color:var(--sanzcart-muted);">
-                        <span>Shipping</span>
-                        <span style="font-weight:700; color:var(--sanzcart-text);">Calculated at checkout</span>
+
+                    <div class="price-row">
+                        <span>Total MRP</span>
+                        <span>${{ total }}</span>
+                    </div>
+                    <div class="price-row discount">
+                        <span>Bag Discount</span>
+                        <span>-$0.00</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Delivery Fee</span>
+                        <span style="color:#00b853;">FREE</span>
                     </div>
                     
-                    <hr style="border-color:var(--sanzcart-border); margin:24px 0;">
-                    
-                    <div style="display:flex; justify-content:space-between; margin-bottom:30px; align-items:flex-end;">
-                        <span style="font-family:var(--font-heading); font-weight:800; font-size:1.4rem;">Total</span>
-                        <span style="font-family:var(--font-heading); font-weight:800; font-size:1.8rem; color:var(--sanzcart-primary); line-height:1;">${{ total }}</span>
+                    <div class="price-row total">
+                        <span style="font-family:var(--font-heading); font-weight:800; font-size:1.2rem;">Total Amount</span>
+                        <span style="font-family:var(--font-heading); font-weight:800; font-size:1.4rem; color:var(--sanzcart-primary);">${{ total }}</span>
                     </div>
                     
                     <a href="{% url 'checkout' %}" class="btn-primary-sc" style="margin-bottom:16px;">
@@ -111,6 +124,21 @@
                     <a href="{% url 'home' %}" class="btn-outline-sc">
                         Continue Shopping
                     </a>
+                </div>
+
+                <!-- Cross-sell section -->
+                <div style="margin-top:40px;">
+                    <h6 style="font-family:var(--font-heading); font-weight:800; font-size:1rem; margin-bottom:16px;">People also bought</h6>
+                    <div class="horizontal-scroll">
+                        {% for item in cart_items|slice:":3" %}
+                        <div class="cross-sell-card">
+                            <img src="{{ item.product.image.url }}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+                            <div style="font-size:0.8rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ item.product.name }}</div>
+                            <div style="font-size:0.9rem; font-weight:800; color:var(--sanzcart-primary); margin-top:4px;">${{ item.product.price }}</div>
+                            <button style="width:100%; margin-top:10px; border:1px solid var(--sanzcart-border); background:#fff; border-radius:6px; font-size:0.7rem; font-weight:700; padding:6px;">ADD</button>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>

@@ -2,166 +2,225 @@
 {% block title %}My Profile — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .bg-main { background: var(--sanzcart-bg); }
-    .profile-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 24px; box-shadow: 0 5px 15px rgba(0,0,0,0.02); margin-bottom: 24px; }
-    .profile-stat-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; padding: 18px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+    .profile-container { padding: 60px 0; background: var(--sanzcart-bg); min-height: 90vh; }
     
-    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; width: 100%; cursor: pointer; text-decoration: none; }
-    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); color: #fff; }
+    /* SIDEBAR */
+    .p-sidebar { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px; padding: 32px; overflow: hidden; position: sticky; top: 100px; }
+    .p-avatar-wrap { position: relative; width: 120px; height: 120px; margin: 0 auto 24px; }
+    .p-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .p-avatar-edit { 
+        position: absolute; bottom: 0; right: 0; width: 36px; height: 36px; background: var(--sanzcart-primary); 
+        color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+        font-size: 0.9rem; border: 3px solid #fff; cursor: pointer; transition: 0.2s;
+    }
+    .p-avatar-edit:hover { transform: scale(1.1); background: var(--sanzcart-dark); }
+    
+    .p-name { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 900; margin-bottom: 4px; text-align: center; color: var(--sanzcart-text); }
+    .p-email { font-size: 0.9rem; color: var(--sanzcart-muted); text-align: center; margin-bottom: 24px; font-weight: 500; }
+    
+    .p-badge { 
+        background: linear-gradient(135deg, #ffd700, #ff8c00); color: #fff; padding: 4px 12px; 
+        border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; 
+        display: inline-block; margin-bottom: 30px; letter-spacing: 1px;
+    }
 
-    .nav-link-sc { display: flex; align-items: center; gap: 12px; padding: 14px 18px; text-decoration: none; color: var(--sanzcart-text); font-size: 0.95rem; font-weight: 600; border-bottom: 1.5px solid var(--sanzcart-border); transition: 0.2s; }
-    .nav-link-sc:last-child { border-bottom: none; }
-    .nav-link-sc:hover { background: var(--sanzcart-bg); color: var(--sanzcart-primary); }
-    .nav-link-sc.active { background: var(--sanzcart-bg); color: var(--sanzcart-primary); }
-    .nav-link-sc i { width: 20px; text-align: center; color: var(--sanzcart-muted); transition: 0.2s; }
-    .nav-link-sc:hover i, .nav-link-sc.active i { color: var(--sanzcart-primary); }
+    .p-nav { display: flex; flex-direction: column; gap: 8px; }
+    .p-nav-item { 
+        display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; 
+        text-decoration: none; color: var(--sanzcart-text); font-weight: 700; font-size: 0.95rem; transition: 0.2s;
+    }
+    .p-nav-item i { width: 20px; font-size: 1.1rem; color: var(--sanzcart-muted); transition: 0.2s; }
+    .p-nav-item:hover, .p-nav-item.active { background: var(--sanzcart-bg); color: var(--sanzcart-primary); }
+    .p-nav-item:hover i, .p-nav-item.active i { color: var(--sanzcart-primary); }
+
+    /* CONTENT CARDS */
+    .p-card { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px; padding: 32px; margin-bottom: 24px; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+    .p-card-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; color: var(--sanzcart-text); }
+    
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-box { background: var(--sanzcart-bg); border-radius: 16px; padding: 20px; text-align: center; border: 1.5px solid var(--sanzcart-border); }
+    .stat-val { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .stat-lbl { font-size: 0.7rem; font-weight: 800; color: var(--sanzcart-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .order-mini { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1.5px solid var(--sanzcart-border); }
+    .order-mini:last-child { border-bottom: none; }
+    .order-id { font-weight: 800; font-size: 1rem; color: var(--sanzcart-text); margin-bottom: 2px; }
+    .order-meta { font-size: 0.8rem; color: var(--sanzcart-muted); font-weight: 600; }
+    .order-status { 
+        padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; 
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .address-card { background: var(--sanzcart-bg); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; padding: 20px; position: relative; }
+    .address-tag { position: absolute; top: 16px; right: 16px; font-size: 0.65rem; font-weight: 800; color: var(--sanzcart-primary); background: #fff; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--sanzcart-border); }
+
+    .btn-edit { background: transparent; border: 1.5px solid var(--sanzcart-border); color: var(--sanzcart-text); padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: 0.2s; }
+    .btn-edit:hover { border-color: var(--sanzcart-primary); color: var(--sanzcart-primary); }
+
+    @media (max-width: 991px) {
+        .stat-grid { grid-template-columns: 1fr 1fr; }
+        .p-sidebar { position: static; margin-bottom: 30px; }
+    }
 </style>
 
-<div class="bg-main py-5">
+<div class="profile-container">
     <div class="container">
         <div class="row g-4">
-
-            <!-- Left Sidebar -->
+            <!-- Sidebar -->
             <div class="col-lg-3">
-                <div class="profile-card" style="text-align:center;">
-                    <!-- Avatar -->
-                    <div style="margin-bottom:16px;">
+                <div class="p-sidebar">
+                    <div class="p-avatar-wrap">
                         {% if profile.avatar %}
-                        <img src="{{ profile.avatar.url }}"
-                             style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--sanzcart-border);box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                        <img src="{{ profile.avatar.url }}" class="p-avatar" alt="Avatar">
                         {% else %}
-                        <div style="width:96px;height:96px;background:var(--sanzcart-text);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:2.5rem;font-weight:700;margin:0 auto;font-family:var(--font-heading);">
-                            {{ request.user.username|first|upper }}
-                        </div>
+                        <div class="p-avatar" style="background:var(--sanzcart-dark); display:flex; align-items:center; justify-content:center; color:#fff; font-size:3rem; font-weight:900; font-family:var(--font-heading);">{{ request.user.username|first|upper }}</div>
                         {% endif %}
+                        <label for="avatarUpload" class="p-avatar-edit"><i class="fas fa-camera"></i></label>
+                        <input type="file" id="avatarUpload" style="display:none;">
                     </div>
-                    <div style="font-weight:800;font-size:1.2rem;font-family:var(--font-heading);color:var(--sanzcart-text);">{{ request.user.username }}</div>
-                    <div style="font-size:0.9rem;color:var(--sanzcart-muted);margin-bottom:16px;">{{ request.user.email }}</div>
-                    {% if profile.bio %}
-                    <div style="font-size:0.85rem;color:var(--sanzcart-muted);margin-bottom:20px;line-height:1.6;">{{ profile.bio }}</div>
-                    {% endif %}
-                    <a href="{% url 'edit_profile' %}" class="btn-primary-sc" style="padding:10px;">
-                        Edit Profile
-                    </a>
-                </div>
+                    
+                    <div class="text-center">
+                        <div class="p-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <div class="p-email">{{ request.user.email }}</div>
+                        <div class="p-badge">👑 Premium Member</div>
+                    </div>
 
-                <!-- Quick Links -->
-                <div class="profile-card" style="padding:0;overflow:hidden;">
-                    <a href="{% url 'profile' %}" class="nav-link-sc active">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a href="{% url 'my_orders' %}" class="nav-link-sc">
-                        <i class="fas fa-box"></i> My Orders
-                    </a>
-                    <a href="{% url 'wishlist' %}" class="nav-link-sc">
-                        <i class="far fa-heart"></i> Wishlist
-                    </a>
-                    <a href="{% url 'change_password' %}" class="nav-link-sc">
-                        <i class="fas fa-lock"></i> Change Password
-                    </a>
-                    <a href="{% url 'logout' %}" class="nav-link-sc" style="color:#d32f2f;" onmouseover="this.style.background='rgba(230,57,70,0.05)'" onmouseout="this.style.background='transparent'">
-                        <i class="fas fa-sign-out-alt" style="color:#d32f2f;"></i> Logout
-                    </a>
+                    <div class="p-nav">
+                        <a href="#overview" class="p-nav-item active" onclick="switchTab('overview')"><i class="fas fa-th-large"></i> Overview</a>
+                        <a href="{% url 'my_orders' %}" class="p-nav-item"><i class="fas fa-shopping-bag"></i> My Orders</a>
+                        <a href="{% url 'wishlist' %}" class="p-nav-item"><i class="far fa-heart"></i> Wishlist</a>
+                        <a href="#addresses" class="p-nav-item" onclick="switchTab('addresses')"><i class="fas fa-map-marker-alt"></i> Addresses</a>
+                        <a href="{% url 'edit_profile' %}" class="p-nav-item"><i class="fas fa-cog"></i> Settings</a>
+                        <a href="{% url 'logout' %}" class="p-nav-item" style="color:var(--sanzcart-primary); margin-top:16px;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
                 </div>
             </div>
 
-            <!-- Right Content -->
+            <!-- Content Area -->
             <div class="col-lg-9">
+                <!-- OVERVIEW TAB -->
+                <div id="overview-tab">
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:var(--sanzcart-text);">{{ orders.count }}</div>
+                            <div class="stat-lbl">Total Orders</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:var(--sanzcart-primary);">${{ total_spent|default:"0" }}</div>
+                            <div class="stat-lbl">Total Spent</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:var(--sanzcart-text);">{{ wishlist_count|default:"0" }}</div>
+                            <div class="stat-lbl">Wishlist</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:var(--sanzcart-text);">24</div>
+                            <div class="stat-lbl">Points</div>
+                        </div>
+                    </div>
 
-                <!-- Stats -->
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="profile-stat-card">
-                            <div style="font-size:2rem;font-weight:800;font-family:var(--font-heading);color:var(--sanzcart-text);">{{ total_orders }}</div>
-                            <div style="font-size:0.8rem;color:var(--sanzcart-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;font-weight:700;">Orders</div>
+                    <div class="p-card">
+                        <div class="p-card-title">
+                            Recent Orders
+                            <a href="{% url 'my_orders' %}" style="font-size:0.85rem; color:var(--sanzcart-primary); text-decoration:none; font-weight:800;">View All →</a>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="profile-stat-card">
-                            <div style="font-size:2rem;font-weight:800;font-family:var(--font-heading);color:var(--sanzcart-primary);">${{ total_spent }}</div>
-                            <div style="font-size:0.8rem;color:var(--sanzcart-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;font-weight:700;">Spent</div>
+                        {% if orders %}
+                        {% for order in orders|slice:":3" %}
+                        <div class="order-mini">
+                            <div style="width:50px; height:50px; background:var(--sanzcart-bg); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; border:1px solid var(--sanzcart-border);">📦</div>
+                            <div style="flex:1;">
+                                <div class="order-id">Order #{{ order.id }}</div>
+                                <div class="order-meta">{{ order.created_at|date:"F d, Y" }} · {{ order.items.count }} items</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-weight:900; font-size:1.1rem; color:var(--sanzcart-text); margin-bottom:4px;">${{ order.total_price }}</div>
+                                <span class="order-status" style="{% if order.status == 'delivered' %}background:rgba(0,184,83,0.1);color:#00b853;{% elif order.status == 'cancelled' %}background:rgba(230,57,70,0.1);color:#d32f2f;{% else %}background:rgba(255,152,0,0.1);color:#e65100;{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </div>
                         </div>
+                        {% endfor %}
+                        {% else %}
+                        <p style="text-align:center; color:var(--sanzcart-muted); padding:20px 0;">No recent orders found.</p>
+                        {% endif %}
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="profile-stat-card">
-                            <div style="font-size:2rem;font-weight:800;font-family:var(--font-heading);color:var(--sanzcart-text);">{{ wishlist_count }}</div>
-                            <div style="font-size:0.8rem;color:var(--sanzcart-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;font-weight:700;">Wishlist</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="profile-stat-card">
-                            <div style="font-size:2rem;font-weight:800;font-family:var(--font-heading);color:var(--sanzcart-text);">{{ reviews_count }}</div>
-                            <div style="font-size:0.8rem;color:var(--sanzcart-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;font-weight:700;">Reviews</div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Personal Info -->
-                <div class="profile-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1.5px solid var(--sanzcart-border);padding-bottom:12px;">
-                        <h6 style="font-family:var(--font-heading);font-weight:800;font-size:1.1rem;color:var(--sanzcart-text);margin:0;">Personal Info</h6>
-                        <a href="{% url 'edit_profile' %}" style="font-size:0.9rem;color:var(--sanzcart-primary);text-decoration:none;font-weight:700;">Edit →</a>
-                    </div>
                     <div class="row g-4">
-                        
                         <div class="col-md-6">
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--sanzcart-muted);margin-bottom:4px;">First Name</div>
-                            <div style="font-weight:600;font-size:1rem;color:var(--sanzcart-text);">{{ request.user.first_name|default:"—" }}</div>
+                            <div class="p-card" style="height:100%;">
+                                <div class="p-card-title">Personal Info</div>
+                                <div style="display:flex; flex-direction:column; gap:16px;">
+                                    <div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:var(--sanzcart-muted); text-transform:uppercase; margin-bottom:4px;">Full Name</div>
+                                        <div style="font-weight:700; color:var(--sanzcart-text);">{{ request.user.get_full_name|default:request.user.username }}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:var(--sanzcart-muted); text-transform:uppercase; margin-bottom:4px;">Phone</div>
+                                        <div style="font-weight:700; color:var(--sanzcart-text);">{{ profile.phone|default:"Not provided" }}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--sanzcart-muted);margin-bottom:4px;">Last Name</div>
-                            <div style="font-weight:600;font-size:1rem;color:var(--sanzcart-text);">{{ request.user.last_name|default:"—" }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--sanzcart-muted);margin-bottom:4px;">Email</div>
-                            <div style="font-weight:600;font-size:1rem;color:var(--sanzcart-text);">{{ request.user.email|default:"—" }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--sanzcart-muted);margin-bottom:4px;">Phone</div>
-                            <div style="font-weight:600;font-size:1rem;color:var(--sanzcart-text);">{{ profile.phone|default:"—" }}</div>
-                        </div>
-                        <div class="col-12">
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--sanzcart-muted);margin-bottom:4px;">Address</div>
-                            <div style="font-weight:600;font-size:1rem;color:var(--sanzcart-text);line-height:1.5;">
-                                {% if profile.address %}
-                                    {{ profile.address }}{% if profile.city %}, {{ profile.city }}{% endif %}{% if profile.state %}, {{ profile.state }}{% endif %}{% if profile.pincode %} — {{ profile.pincode }}{% endif %}
-                                {% else %}—{% endif %}
+                            <div class="p-card" style="height:100%;">
+                                <div class="p-card-title">Payment Methods</div>
+                                <div style="display:flex; align-items:center; gap:16px; background:var(--sanzcart-bg); padding:16px; border-radius:12px; border:1.5px solid var(--sanzcart-border);">
+                                    <div style="font-size:1.5rem; color:var(--sanzcart-text);"><i class="fab fa-cc-visa"></i></div>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:800; font-size:0.9rem;">•••• 4242</div>
+                                        <div style="font-size:0.75rem; color:var(--sanzcart-muted); font-weight:600;">Expires 12/28</div>
+                                    </div>
+                                    <span style="font-size:0.65rem; font-weight:800; color:var(--sanzcart-primary);">DEFAULT</span>
+                                </div>
+                                <a href="#" style="display:block; text-align:center; margin-top:20px; font-size:0.85rem; font-weight:800; color:var(--sanzcart-primary); text-decoration:none;">+ Add New Card</a>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Recent Orders -->
-                <div class="profile-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1.5px solid var(--sanzcart-border);padding-bottom:12px;">
-                        <h6 style="font-family:var(--font-heading);font-weight:800;font-size:1.1rem;color:var(--sanzcart-text);margin:0;">Recent Orders</h6>
-                        <a href="{% url 'my_orders' %}" style="font-size:0.9rem;color:var(--sanzcart-primary);text-decoration:none;font-weight:700;">View All →</a>
-                    </div>
-                    {% if orders %}
-                    {% for order in orders %}
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1.5px solid var(--sanzcart-border);">
-                        <div>
-                            <div style="font-weight:700;font-size:1rem;color:var(--sanzcart-text);">Order #{{ order.id }}</div>
-                            <div style="font-size:0.85rem;color:var(--sanzcart-muted);font-weight:500;">{{ order.created_at|date:"M d, Y" }}</div>
+                <!-- ADDRESSES TAB -->
+                <div id="addresses-tab" style="display:none;">
+                    <div class="p-card">
+                        <div class="p-card-title">
+                            Saved Addresses
+                            <button class="btn-primary-sc" style="width:auto; padding:8px 16px; font-size:0.85rem;">+ Add New</button>
                         </div>
-                        <div style="display:flex;align-items:center;gap:16px;">
-                            <span style="font-weight:800;font-size:1.1rem;color:var(--sanzcart-primary);">${{ order.total_price }}</span>
-                            <span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
-                                {% if order.status == 'delivered' %}background:rgba(0,184,83,0.1);color:#00b853;
-                                {% elif order.status == 'cancelled' %}background:rgba(230,57,70,0.1);color:#d32f2f;
-                                {% else %}background:rgba(255,152,0,0.1);color:#e65100;{% endif %}">
-                                {{ order.status }}
-                            </span>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="address-card">
+                                    <span class="address-tag">HOME</span>
+                                    <div style="font-weight:800; margin-bottom:8px;">{{ request.user.username }}</div>
+                                    <div style="font-size:0.9rem; color:var(--sanzcart-muted); line-height:1.6; margin-bottom:16px;">
+                                        {{ profile.address|default:"123 Luxury Lane" }}<br>
+                                        {{ profile.city|default:"Chennai" }}, {{ profile.state|default:"TN" }}<br>
+                                        {{ profile.pincode|default:"600001" }}
+                                    </div>
+                                    <div style="display:flex; gap:12px;">
+                                        <a href="#" class="btn-edit">Edit</a>
+                                        <a href="#" class="btn-edit" style="color:var(--sanzcart-primary);">Remove</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <p style="color:var(--sanzcart-muted);font-size:0.95rem;text-align:center;padding:32px 0;font-weight:500;">No orders yet.</p>
-                    {% endif %}
                 </div>
-
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function switchTab(tabId) {
+    document.getElementById('overview-tab').style.display = tabId === 'overview' ? 'block' : 'none';
+    document.getElementById('addresses-tab').style.display = tabId === 'addresses' ? 'block' : 'none';
+    
+    // Update active nav item
+    document.querySelectorAll('.p-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if(item.getAttribute('onclick') && item.getAttribute('onclick').includes(tabId)) {
+            item.classList.add('active');
+        }
+    });
+}
+</script>
 {% endblock %}

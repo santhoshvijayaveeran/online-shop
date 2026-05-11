@@ -1,4 +1,5 @@
-const CACHE_NAME = 'online-shop-v2';
+const CACHE_NAME = 'online-shop-v3';
+
 const urlsToCache = [
     '/',
     '/static/css/style.css',
@@ -14,12 +15,18 @@ self.addEventListener('install', event => {
     );
 });
 
-// Fetch - Network-First
+// Fetch - Network-First for GET, Network-Only for others
 self.addEventListener('fetch', event => {
+    // Only handle GET requests for caching
+    if (event.request.method !== 'GET') {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                if (response && response.status === 200) {
+                if (response && response.status === 200 && response.type === 'basic') {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, responseClone);
@@ -36,6 +43,7 @@ self.addEventListener('fetch', event => {
             })
     );
 });
+
 
 // Activate - old cache clear
 self.addEventListener('activate', event => {

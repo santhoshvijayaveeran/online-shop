@@ -1,6 +1,18 @@
 import os
 from django.conf import settings
-from .models import Cart, CartItem
+from .models import Cart, CartItem, Notification
+
+def notifications(request):
+    if request.user.is_authenticated:
+        notifs = Notification.objects.filter(user=request.user).order_by('-created_at')[:5]
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    else:
+        notifs = []
+        unread_count = 0
+    return {
+        'notifications': notifs,
+        'unread_notifications_count': unread_count
+    }
 
 def cart_data(request):
     if request.user.is_authenticated:
@@ -27,4 +39,10 @@ def vapid_key(request):
 def social_links(request):
     return {
         'social_links': getattr(settings, 'SOCIAL_LINKS', {})
+    }
+
+def chatbot_config(request):
+    return {
+        'gemini_api_key': settings.GEMINI_API_KEY,
+        'GROQ_API_KEY': os.getenv('GROQ_API_KEY', '')
     }

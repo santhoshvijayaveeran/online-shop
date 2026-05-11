@@ -10,7 +10,22 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
     <meta name="theme-color" content="#e63946">
-    <meta name="description" content="{% block meta_description %}Premium Fashion & Lifestyle Store{% endblock %}">
+    <meta name="description" content="{% block meta_description %}SanzCart - Discover premium fashion, luxury lifestyle, and everyday essentials. Shop the latest trends with AI-powered suggestions.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}ecommerce, fashion, luxury, sanzcart, shopping{% endblock %}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{% block og_title %}{{ product.name|default:'SanzCart' }} | Discover Your Style{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Shop the finest collection of luxury fashion and lifestyle products at SanzCart.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% if product.image %}{{ product.image.url }}{% else %}{% static 'images/og-image.png' %}{% endif %}{% endblock %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta property="twitter:title" content="{% block tw_title %}{{ product.name|default:'SanzCart' }} | Discover Your Style{% endblock %}">
+    <meta property="twitter:description" content="{% block tw_description %}Shop the finest collection of luxury fashion and lifestyle products at SanzCart.{% endblock %}">
+    <meta property="twitter:image" content="{% block tw_image %}{% if product.image %}{{ product.image.url }}{% else %}{% static 'images/og-image.png' %}{% endif %}{% endblock %}">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
@@ -23,12 +38,14 @@
     <style>
         :root {
             --sanzcart-primary: #e63946;
+            --sanzcart-primary-hover: #d32f2f;
             --sanzcart-bg: #f7f4ef;
             --sanzcart-card: #ffffff;
             --sanzcart-text: #1a1a1a;
             --sanzcart-muted: #9a9590;
             --sanzcart-border: #e8e4de;
             --sanzcart-dark: #1a1a1a;
+            --sanzcart-success: #00b853;
             
             --font-heading: 'Syne', sans-serif;
             --font-body: 'Outfit', sans-serif;
@@ -43,12 +60,83 @@
             display: flex; 
             flex-direction: column; 
             min-height: 100vh; 
-            overflow-x: hidden;
+            overflow-x: visible;
         }
         h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); color: var(--sanzcart-text); font-weight: 700; }
         a { text-decoration: none; color: inherit; transition: 0.2s; }
         
-        /* TICKER BAR (Usually above navbar, but ordered as 1. Navbar, 2. Ticker below) */
+        /* UTILITIES */
+        .section-padding { padding: 80px 0; }
+        .bg-main { background: var(--sanzcart-bg); }
+        .bg-light-alt { background: var(--sanzcart-card); }
+        .section-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 40px; text-align: center; }
+
+        /* BUTTONS */
+        .btn-primary-sc {
+            background: var(--sanzcart-primary); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 600; 
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none;
+            cursor: pointer;
+        }
+        .btn-primary-sc:hover { background: var(--sanzcart-primary-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(230,57,70,0.2); }
+        
+        .btn-outline-sc {
+            background: transparent; color: var(--sanzcart-text); padding: 12px 28px; border-radius: 8px; font-weight: 600; 
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 2px solid var(--sanzcart-border);
+            cursor: pointer;
+        }
+        .btn-outline-sc:hover { border-color: var(--sanzcart-text); color: var(--sanzcart-text); }
+        
+        /* CARDS */
+        .sanz-card {
+            background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+            transition: all 0.3s ease; overflow: hidden;
+        }
+        .sanz-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
+
+        /* PRODUCT CARD */
+        .product-card {
+            background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px;
+            overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; height: 100%;
+        }
+        .product-card:hover { border-color: var(--sanzcart-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-4px); }
+        .pc-img-wrap { height: 260px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; }
+        .pc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .pc-badge {
+            position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .pc-badge.new { background: var(--sanzcart-dark); color: #fff; }
+        .pc-badge.sale { background: var(--sanzcart-primary); color: #fff; }
+        .pc-badge.hot { background: #ff9800; color: #fff; }
+        .pc-wishlist {
+            position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: #fff;
+            display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); transition: 0.2s; border: 1.5px solid var(--sanzcart-border); cursor: pointer;
+        }
+        .pc-wishlist:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
+        .pc-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+        .pc-cat { font-size: 0.75rem; color: var(--sanzcart-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .pc-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--sanzcart-text); }
+        .pc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+        .pc-price { font-size: 1.2rem; font-weight: 800; }
+        
+        /* FORM CONTROLS */
+        .form-control-sc {
+            width: 100%; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--sanzcart-border); 
+            background: var(--sanzcart-bg); color: var(--sanzcart-text); font-family: var(--font-body); 
+            font-size: 0.95rem; outline: none; transition: 0.2s;
+        }
+        .form-control-sc:focus { border-color: var(--sanzcart-primary); background: #fff; box-shadow: 0 0 0 4px rgba(230,57,70,0.05); }
+
+        /* HORIZONTAL SCROLL */
+        .horizontal-scroll {
+            display: flex; gap: 20px; overflow-x: auto; padding: 10px 0 30px; scrollbar-width: none;
+        }
+        .horizontal-scroll::-webkit-scrollbar { display: none; }
+
+        /* SKELETON LOADING */
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 8px; }
+        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* TICKER BAR */
         .ticker-bar {
             background: var(--sanzcart-dark);
             color: #fff;
@@ -61,16 +149,10 @@
             display: flex;
             align-items: center;
         }
-        .ticker-content {
-            display: inline-block;
-            animation: tickerScroll 20s linear infinite;
-        }
+        .ticker-content { display: inline-block; animation: tickerScroll 20s linear infinite; }
         .ticker-content span { margin: 0 40px; }
         .ticker-hl { color: var(--sanzcart-primary); font-weight: 600; }
-        @keyframes tickerScroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
+        @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         /* NAVBAR */
         .sanzcart-nav { 
@@ -81,33 +163,13 @@
             top: 0; 
             z-index: 1000; 
         }
-        .nav-inner { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            gap: 30px; 
-        }
-        
-        /* LOGO */
-        .sanzcart-logo { 
-            font-family: var(--font-heading); 
-            font-size: 1.8rem; 
-            font-weight: 800; 
-            letter-spacing: -1px; 
-            display: flex; 
-            align-items: center; 
-        }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+        .sanzcart-logo { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; display: flex; align-items: center; }
         .sanzcart-logo .sanz { color: var(--sanzcart-text); }
         .sanzcart-logo .cart { color: var(--sanzcart-primary); }
 
-        /* NAV LINKS */
         .nav-links { display: flex; gap: 24px; align-items: center; }
-        .nav-links a { 
-            font-size: 0.95rem; 
-            font-weight: 500; 
-            color: var(--sanzcart-text); 
-            position: relative;
-        }
+        .nav-links a { font-size: 0.95rem; font-weight: 500; color: var(--sanzcart-text); position: relative; }
         .nav-links a:hover { color: var(--sanzcart-primary); }
         .nav-links a::after {
             content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
@@ -115,171 +177,77 @@
         }
         .nav-links a:hover::after { width: 100%; }
 
-        /* SEARCH BAR */
-        .sanzcart-search { 
-            flex: 1; 
-            max-width: 400px; 
-            position: relative; 
-        }
+        .sanzcart-search { flex: 1; max-width: 400px; position: relative; }
         .sanzcart-search input { 
-            width: 100%; 
-            padding: 10px 16px 10px 42px; 
-            border: 1.5px solid var(--sanzcart-border); 
-            border-radius: 8px; 
-            background: var(--sanzcart-bg); 
-            font-size: 0.9rem; 
-            font-family: var(--font-body);
-            color: var(--sanzcart-text); 
-            outline: none; 
-            transition: 0.2s; 
+            width: 100%; padding: 10px 16px 10px 42px; border: 1.5px solid var(--sanzcart-border); border-radius: 8px; 
+            background: var(--sanzcart-bg); font-size: 0.9rem; font-family: var(--font-body); color: var(--sanzcart-text); 
+            outline: none; transition: 0.2s; 
         }
-        .sanzcart-search input:focus { 
-            border-color: var(--sanzcart-primary); 
-            background: var(--sanzcart-card); 
-            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
-        }
-        .sanzcart-search i { 
-            position: absolute; 
-            left: 14px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            color: var(--sanzcart-muted); 
-            font-size: 1rem;
-        }
+        .sanzcart-search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--sanzcart-muted); font-size: 1rem; }
 
-        /* NAV ICONS & BUTTON */
         .nav-actions { display: flex; align-items: center; gap: 16px; }
-        .nav-icon { 
-            position: relative; 
-            color: var(--sanzcart-text); 
-            font-size: 1.25rem; 
-            transition: 0.2s; 
-            display: flex;
-            align-items: center;
-        }
+        .nav-icon { position: relative; color: var(--sanzcart-text); font-size: 1.25rem; transition: 0.2s; display: flex; align-items: center; }
         .nav-icon:hover { color: var(--sanzcart-primary); }
         .cart-badge { 
-            position: absolute; 
-            top: -6px; 
-            right: -8px; 
-            background: var(--sanzcart-primary); 
-            color: #fff; 
-            border-radius: 50%; 
-            width: 18px; 
-            height: 18px; 
-            font-size: 10px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 700; 
-            border: 2px solid var(--sanzcart-card);
+            position: absolute; top: -6px; right: -8px; background: var(--sanzcart-primary); color: #fff; 
+            border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; 
+            justify-content: center; font-weight: 700; border: 2px solid var(--sanzcart-card);
         }
         .btn-signin { 
-            background: var(--sanzcart-dark); 
-            color: #fff; 
-            padding: 10px 24px; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            font-size: 0.95rem; 
-            transition: 0.2s; 
-            border: 1.5px solid var(--sanzcart-dark);
+            background: var(--sanzcart-dark); color: #fff; padding: 10px 24px; border-radius: 8px; 
+            font-weight: 600; font-size: 0.95rem; transition: 0.2s; border: 1.5px solid var(--sanzcart-dark);
         }
-        .btn-signin:hover { 
-            background: transparent; 
-            color: var(--sanzcart-dark); 
-        }
+        .btn-signin:hover { background: transparent; color: var(--sanzcart-dark); }
 
-        /* DROPDOWN */
         .dropdown-menu { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 8px; }
         .dropdown-item { border-radius: 6px; padding: 10px 16px; font-size: 0.9rem; font-weight: 500; }
         .dropdown-item:hover { background: var(--sanzcart-bg); color: var(--sanzcart-primary); }
 
-        /* TOASTS */
-        .sanzcart-toast { position: fixed; top: 90px; right: 24px; z-index: 9999; }
-        .toast { border-radius: 8px; border: 1.5px solid var(--sanzcart-border); box-shadow: 0 10px 30px rgba(0,0,0,0.08); font-family: var(--font-body); }
-        .toast-error { background: #fff; border-left: 4px solid var(--sanzcart-primary); }
-        .toast-success { background: #fff; border-left: 4px solid #00b853; }
-
         /* FOOTER */
-        .sanzcart-footer { 
-            background: var(--sanzcart-card); 
-            border-top: 1.5px solid var(--sanzcart-border); 
-            padding: 80px 0 0; 
-            margin-top: 0;
-        }
-        .footer-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 60px;
-        }
+        .sanzcart-footer { background: var(--sanzcart-card); border-top: 1.5px solid var(--sanzcart-border); padding: 80px 0 0; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
         .footer-logo { font-family: var(--font-heading); font-size: 1.6rem; font-weight: 800; margin-bottom: 20px; display: inline-block; }
         .footer-logo .sanz { color: var(--sanzcart-text); }
         .footer-logo .cart { color: var(--sanzcart-primary); }
         .footer-desc { color: var(--sanzcart-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; max-width: 300px; }
         .social-icons { display: flex; gap: 12px; }
         .social-icons a { 
-            width: 36px; height: 36px; border-radius: 50%; 
-            background: var(--sanzcart-bg); display: flex; align-items: center; justify-content: center;
-            color: var(--sanzcart-text); transition: 0.2s; border: 1.5px solid var(--sanzcart-border);
+            width: 36px; height: 36px; border-radius: 50%; background: var(--sanzcart-bg); 
+            display: flex; align-items: center; justify-content: center; color: var(--sanzcart-text); 
+            transition: 0.2s; border: 1.5px solid var(--sanzcart-border);
         }
         .social-icons a:hover { background: var(--sanzcart-primary); color: #fff; border-color: var(--sanzcart-primary); }
-        
         .footer-col h4 { font-size: 1.1rem; margin-bottom: 24px; }
         .footer-col a { display: block; color: var(--sanzcart-muted); font-size: 0.95rem; margin-bottom: 14px; }
         .footer-col a:hover { color: var(--sanzcart-primary); transform: translateX(4px); }
+        .footer-bottom { background: var(--sanzcart-dark); padding: 20px 0; color: #fff; }
+        .footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; }
 
-        .footer-bottom { 
-            background: var(--sanzcart-dark); 
-            padding: 20px 0; 
-            color: #fff; 
-        }
-        .footer-bottom-inner {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .copyright { font-size: 0.85rem; color: #aaa; }
-        .payment-badges { display: flex; gap: 12px; align-items: center; }
-        .payment-badges span { 
-            background: rgba(255,255,255,0.1); 
-            padding: 4px 12px; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            font-weight: 600; 
-            letter-spacing: 1px;
-        }
-
-        /* SCROLL TOP */
-        #scrollTop { position: fixed; bottom: 24px; right: 24px; background: var(--sanzcart-primary); color: #fff; border: none; border-radius: 50%; width: 44px; height: 44px; display: none; cursor: pointer; z-index: 999; box-shadow: 0 4px 12px rgba(230,57,70,0.3); align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
-        #scrollTop:hover { transform: translateY(-3px); }
-
-        .fade-in { animation: fadeIn 0.5s ease; flex-grow: 1; }
-        @keyframes fadeIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
-
-        @media(max-width: 991px) {
-            .nav-inner { flex-wrap: wrap; }
-            .sanzcart-search { order: 3; flex: 1 1 100%; max-width: 100%; margin-top: 10px; }
-            .nav-links { display: none; }
-            .footer-grid { grid-template-columns: 1fr 1fr; }
-        }
-        @media(max-width: 576px) {
-            .footer-grid { grid-template-columns: 1fr; }
-            .footer-bottom-inner { flex-direction: column; gap: 16px; text-align: center; }
+        /* RESPONSIVE */
+        @media(max-width: 1200px) {
+            .container { max-width: 95%; }
         }
         
-        /* Universal Card Style matching the request */
-        .sanz-card {
-            background: var(--sanzcart-card);
-            border: 1.5px solid var(--sanzcart-border);
-            border-radius: 14px;
-            transition: all 0.3s ease;
-            overflow: hidden;
+        @media(max-width: 991px) {
+            .nav-inner { flex-wrap: wrap; justify-content: space-between; }
+            .sanzcart-search { order: 3; flex: 1 1 100%; max-width: 100%; margin-top: 15px; }
+            .nav-links { display: none; }
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 30px; }
+            .section-padding { padding: 60px 0; }
         }
-        .sanz-card:hover {
-            border-color: var(--sanzcart-primary);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            transform: translateY(-4px);
+        
+        @media(max-width: 768px) {
+            .nav-actions { gap: 12px; }
+            .btn-signin { padding: 8px 16px; font-size: 0.85rem; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .section-title { font-size: 1.8rem; }
+        }
+        
+        @media(max-width: 576px) {
+            .sanzcart-logo { font-size: 1.5rem; }
+            .footer-bottom-inner { flex-direction: column; gap: 16px; text-align: center; }
+            .nav-icon { font-size: 1.15rem; }
+            .container { padding-left: 20px; padding-right: 20px; }
         }
     </style>
 </head>
@@ -300,13 +268,55 @@
             <a href="{% url 'about' %}">About</a>
         </div>
 
-        <form class="sanzcart-search" method="GET" action="{% url 'search' %}">
+        <form class="sanzcart-search" method="GET" action="{% url 'search' %}" id="searchForm" autocomplete="off">
             <button type="submit" style="background:none;border:none;padding:0;margin:0;position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--sanzcart-muted);font-size:1rem;cursor:pointer;"><i class="fas fa-search"></i></button>
-            <input type="text" name="q" placeholder="Search products, brands..." value="{{ request.GET.q }}">
+            <input type="text" name="q" id="searchInput" placeholder="Search products, brands..." value="{{ request.GET.q }}">
+            <div id="searchDropdown" class="search-suggestions-dropdown"></div>
         </form>
 
         <div class="nav-actions">
             {% if request.user.is_authenticated %}
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <a href="#" class="nav-icon" data-bs-toggle="dropdown">
+                        <i class="far fa-bell"></i>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="cart-badge" style="background:#00b853;">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end mt-3" style="width:320px; padding:0; overflow:hidden;">
+                        <li style="padding:16px; background:#fafafa; border-bottom:1.5px solid var(--sanzcart-border); display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:800; font-size:0.9rem;">Notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                            <a href="{% url 'mark_all_read' %}" style="font-size:0.7rem; color:var(--sanzcart-primary); font-weight:800; cursor:pointer; text-decoration:none;">Mark all read</a>
+                            {% endif %}
+                        </li>
+                        {% if notifications %}
+                            {% for notif in notifications %}
+                            <li>
+                                <a class="dropdown-item {% if not notif.is_read %}bg-light{% endif %}" href="{% url 'mark_as_read' notif.id %}" style="padding:12px 16px; border-bottom:1px solid var(--sanzcart-border); white-space: normal;">
+                                    <div style="display:flex; gap:12px;">
+                                        <div style="width:36px; height:36px; background:{% if notif.notification_type == 'order' %}rgba(0,184,83,0.1){% else %}rgba(33,150,243,0.1){% endif %}; color:{% if notif.notification_type == 'order' %}#00b853{% else %}#2196f3{% endif %}; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                            <i class="{% if notif.notification_type == 'order' %}fas fa-box{% elif notif.notification_type == 'price_drop' %}fas fa-tag{% else %}fas fa-info{% endif %}" style="font-size:0.8rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700; font-size:0.85rem; margin-bottom:2px;">{{ notif.title }}</div>
+                                            <div style="font-size:0.7rem; color:var(--sanzcart-muted); font-weight:600;">{{ notif.message }}</div>
+                                            <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">{{ notif.created_at|timesince }} ago</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                            <li style="padding:20px; text-align:center; color:var(--sanzcart-muted); font-size:0.8rem;">No new notifications</li>
+                        {% endif %}
+                        <li style="padding:10px; text-align:center;">
+                            <a href="{% url 'notifications_view' %}" style="font-size:0.75rem; font-weight:800; color:var(--sanzcart-primary); text-decoration:none;">View All Notifications</a>
+                        </li>
+                    </ul>
+                </div>
+
                 <a href="{% url 'wishlist' %}" class="nav-icon"><i class="far fa-heart"></i></a>
                 <a href="{% url 'cart' %}" class="nav-icon">
                     <i class="fas fa-shopping-bag"></i>
@@ -314,19 +324,14 @@
                 </a>
                 
                 <div class="dropdown">
-                    <a href="#" class="nav-icon" data-bs-toggle="dropdown"><i class="far fa-user"></i></a>
+                    <a href="#" class="nav-icon" data-bs-toggle="dropdown"><i class="far fa-user-circle"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end mt-3">
                         <li class="px-3 py-2 border-bottom mb-2">
                             <strong style="font-size:0.9rem;">{{ request.user.first_name|default:request.user.username }}</strong>
                             <div class="text-muted" style="font-size:0.8rem;">{{ request.user.email }}</div>
                         </li>
-                        <li><a class="dropdown-item" href="{% url 'profile' %}">My Profile</a></li>
-                        <li><a class="dropdown-item" href="{% url 'my_orders' %}">My Orders</a></li>
-                        <li><a class="dropdown-item" href="{% url 'wishlist' %}">Wishlist</a></li>
-                        {% if request.user.is_staff %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                        {% endif %}
+                        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-edit me-2"></i> Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'my_orders' %}"><i class="fas fa-box me-2"></i> Orders</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Sign Out</a></li>
                     </ul>
@@ -341,6 +346,23 @@
         </div>
     </div>
 </nav>
+
+<!-- MOBILE BOTTOM NAV -->
+<style>
+    .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--sanzcart-card); border-top: 1.5px solid var(--sanzcart-border); display: none; justify-content: space-around; padding: 12px 0; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
+    .mbn-item { display: flex; flex-direction: column; align-items: center; color: var(--sanzcart-muted); text-decoration: none; position: relative; }
+    .mbn-item i { font-size: 1.3rem; margin-bottom: 4px; }
+    .mbn-item span { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    .mbn-item.active { color: var(--sanzcart-primary); }
+    @media (max-width: 991px) { .mobile-bottom-nav { display: flex; } body { padding-bottom: 70px; } }
+</style>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mbn-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="{% url 'search' %}" class="mbn-item {% if request.resolver_match.url_name == 'search' %}active{% endif %}"><i class="fas fa-search"></i><span>Shop</span></a>
+    <a href="{% url 'cart' %}" class="mbn-item {% if request.resolver_match.url_name == 'cart' %}active{% endif %}"><i class="fas fa-shopping-bag"></i><span>Cart</span>{% if cart_count > 0 %}<span class="cart-badge" style="top:-5px;right:-5px;width:16px;height:16px;font-size:8px;">{{ cart_count }}</span>{% endif %}</a>
+    <a href="{% url 'wishlist' %}" class="mbn-item {% if request.resolver_match.url_name == 'wishlist' %}active{% endif %}"><i class="far fa-heart"></i><span>Wish</span></a>
+    <a href="{% url 'profile' %}" class="mbn-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><i class="far fa-user"></i><span>Profile</span></a>
+</div>
 
 <!-- TICKER BAR -->
 <div class="ticker-bar">
@@ -401,7 +423,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('chatbotWindow').classList.add('active');">Customer Support</a>
+                <a href="#" onclick="event.preventDefault(); toggleSanza();">Customer Support</a>
                 <a href="{% url 'my_orders' %}">Track Order</a>
                 <a href="{% url 'info_page' slug='returns' %}">Returns & Exchanges</a>
                 <a href="{% url 'info_page' slug='shipping' %}">Shipping Info</a>
@@ -451,185 +473,111 @@
         });
     }
 </script>
-<!-- CHATBOT -->
-<style>
-/* Chatbot Styles */
-.sanzcart-chatbot {
-    position: fixed;
-    bottom: 80px;
-    right: 24px;
-    z-index: 10000;
-    font-family: var(--font-body);
-}
-.chatbot-toggle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: var(--sanzcart-primary);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    cursor: pointer;
-    box-shadow: 0 10px 25px rgba(230,57,70,0.4);
-    transition: 0.3s;
-    border: none;
-}
-.chatbot-toggle:hover {
-    transform: scale(1.08);
-}
-.chatbot-window {
-    position: absolute;
-    bottom: 80px;
-    right: 0;
-    width: 340px;
-    height: 450px;
-    background: var(--sanzcart-card);
-    border: 1.5px solid var(--sanzcart-border);
-    border-radius: 16px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px);
-    transition: 0.3s;
-}
-.chatbot-window.active {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-}
-.chat-header {
-    background: var(--sanzcart-primary);
-    color: #fff;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.chat-header h5 {
-    margin: 0;
-    font-family: var(--font-heading);
-    font-size: 1.1rem;
-    color: #fff;
-}
-.chat-body {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    background: var(--sanzcart-bg);
-}
-.chat-msg {
-    margin-bottom: 12px;
-    max-width: 85%;
-}
-.chat-msg.bot {
-    background: #fff;
-    border: 1.5px solid var(--sanzcart-border);
-    padding: 12px 16px;
-    border-radius: 14px 14px 14px 0;
-    font-size: 0.9rem;
-    color: var(--sanzcart-text);
-}
-.chat-msg.user {
-    margin-left: auto;
-    background: var(--sanzcart-dark);
-    color: #fff;
-    padding: 12px 16px;
-    border-radius: 14px 14px 0 14px;
-    font-size: 0.9rem;
-}
-.chat-input-area {
-    padding: 16px;
-    background: var(--sanzcart-card);
-    border-top: 1.5px solid var(--sanzcart-border);
-    display: flex;
-    gap: 12px;
-}
-.chat-input-area input {
-    flex: 1;
-    padding: 10px 16px;
-    border: 1.5px solid var(--sanzcart-border);
-    border-radius: 20px;
-    outline: none;
-    font-size: 0.95rem;
-    color: var(--sanzcart-text);
-}
-.chat-input-area input:focus {
-    border-color: var(--sanzcart-primary);
-}
-.chat-input-area button {
-    background: var(--sanzcart-primary);
-    color: #fff;
-    border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.chat-input-area button:hover {
-    background: #d32f2f;
-}
-
-@media(max-width: 576px) {
-    .chatbot-window {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-        z-index: 10001;
-    }
-}
-</style>
-
-<div class="sanzcart-chatbot">
-    <div class="chatbot-window" id="chatbotWindow">
-        <div class="chat-header">
-            <div>
-                <h5>SanzCart Support</h5>
-                <div style="font-size: 0.8rem; opacity: 0.85;">Online</div>
-            </div>
-            <button onclick="document.getElementById('chatbotWindow').classList.remove('active')" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:1.2rem;"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="chat-body" id="chatBody">
-            <div class="chat-msg bot">Hi there! Welcome to SanzCart. How can I help you today?</div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" placeholder="Type a message..." id="chatInput" onkeypress="if(event.key === 'Enter') sendChat()">
-            <button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-    <button class="chatbot-toggle" onclick="document.getElementById('chatbotWindow').classList.toggle('active')">
-        <i class="fas fa-headset"></i>
-    </button>
-</div>
 
 <script>
-function sendChat() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if(msg) {
-        const body = document.getElementById('chatBody');
-        body.innerHTML += `<div class="chat-msg user">${msg}</div>`;
-        input.value = '';
-        body.scrollTop = body.scrollHeight;
-        setTimeout(() => {
-            body.innerHTML += `<div class="chat-msg bot">Thanks for reaching out! A representative will connect with you shortly.</div>`;
-            body.scrollTop = body.scrollHeight;
-        }, 800);
-    }
-}
+(function() {
+    // Search Suggestions Logic
+
+    const searchInput = document.getElementById('searchInput');
+    const searchDropdown = document.getElementById('searchDropdown');
+    const searchForm = document.getElementById('searchForm');
+    let searchTimeout;
+
+    const getRecentSearches = () => JSON.parse(localStorage.getItem('recent_searches') || '[]');
+    const saveSearch = (q) => {
+        if (!q) return;
+        let recent = getRecentSearches();
+        recent = [q, ...recent.filter(item => item !== q)].slice(0, 5);
+        localStorage.setItem('recent_searches', JSON.stringify(recent));
+    };
+
+    const renderDropdown = (data) => {
+        const recent = getRecentSearches();
+        let html = '';
+
+        if (recent.length > 0 && !data) {
+            html += `<div class="ssd-section">
+                <div class="ssd-title">Recent Searches <span class="ssd-clear" onclick="clearRecentSearches(event)">Clear</span></div>
+                ${recent.map(q => `<div class="ssd-item" onclick="submitSearch('${q}')"><i class="fas fa-history"></i> ${q}</div>`).join('')}
+            </div>`;
+        }
+
+        if (data) {
+            if (data.products && data.products.length > 0) {
+                html += `<div class="ssd-section">
+                    <div class="ssd-title">Products</div>
+                    ${data.products.map(p => `
+                        <a href="/product/${p.id}/" class="ssd-item">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>${p.name}</span>
+                            <span class="price">$${p.price}</span>
+                        </a>
+                    `).join('')}
+                </div>`;
+            }
+            if (data.categories && data.categories.length > 0) {
+                html += `<div class="ssd-section">
+                    <div class="ssd-title">Categories</div>
+                    ${data.categories.map(c => `
+                        <a href="/search/?category=${c.id}" class="ssd-item">
+                            <i class="fas fa-th-large"></i>
+                            <span>${c.name}</span>
+                        </a>
+                    `).join('')}
+                </div>`;
+            }
+        }
+
+        if (html) {
+            searchDropdown.innerHTML = html;
+            searchDropdown.classList.add('active');
+        } else {
+            searchDropdown.classList.remove('active');
+        }
+    };
+
+    window.submitSearch = (q) => {
+        searchInput.value = q;
+        searchForm.submit();
+    };
+
+    window.clearRecentSearches = (e) => {
+        e.stopPropagation();
+        localStorage.removeItem('recent_searches');
+        renderDropdown();
+    };
+
+    searchInput.addEventListener('focus', () => {
+        if (!searchInput.value.trim()) renderDropdown();
+    });
+
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        clearTimeout(searchTimeout);
+        if (q.length < 2) {
+            renderDropdown();
+            return;
+        }
+        searchTimeout = setTimeout(async () => {
+            const res = await fetch(`/search/autocomplete/?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            renderDropdown(data);
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchForm.contains(e.target)) searchDropdown.classList.remove('active');
+    });
+
+    searchForm.addEventListener('submit', () => {
+        saveSearch(searchInput.value.trim());
+    });
+})();
 </script>
 
+
+
 {% block extra_js %}{% endblock %}
+{% include 'sanza/widget.html' %}
 </body>
 </html>

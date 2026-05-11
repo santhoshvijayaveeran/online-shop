@@ -1,0 +1,96 @@
+{% load static %}
+
+<!-- SanzCart AI Chatbot Widget -->
+<link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+
+<div id="offline-banner" class="sanz-offline-banner">No internet connection</div>
+
+
+<button id="sanza-toggle" aria-label="Open Chat" onclick="toggleSanza()" style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;background:#e63946;border:none;border-radius:50%;cursor:pointer;z-index:99999;display:flex;align-items:center;justify-content:center;">
+  <span style="font-size:24px">✦</span>
+  <span id="sanza-badge" class="sanza-unread-badge" style="display:none;">0</span>
+</button>
+
+<div id="sanza-widget" 
+     role="complementary" 
+     aria-label="Customer Support Chat"
+     data-user-id="{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}"
+     data-user-name="{{ request.user.get_full_name|default:request.user.username|escapejs }}"
+     style="display:none;position:fixed;bottom:92px;right:24px;width:380px;height:580px;background:#fff;border-radius:20px;z-index:99998;flex-direction:column;overflow:hidden;box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+    <div class="sanz-chat-header">
+        <div class="sanz-brand">
+            <div class="sanz-avatar">✦</div>
+            <div class="sanz-info">
+                <h3>Sanza</h3>
+                <div class="sanz-presence">
+                    <span id="sanz-status-dot" class="sanz-status-dot online"></span>
+                    <span id="sanz-status-text" class="sanz-status">Online</span>
+                </div>
+                <div id="sanz-last-seen" class="sanz-last-seen">Last seen just now</div>
+            </div>
+        </div>
+        <div class="sanz-controls">
+            <button id="sanza-mute-toggle" class="sanz-icon-btn" title="Mute/Unmute" aria-label="Mute Toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+            <button id="sanza-lang-toggle" class="sanz-lang-btn" title="Switch Language" aria-label="Switch Language">
+                EN
+            </button>
+            <button id="sanza-clear" class="sanz-icon-btn" title="Clear Chat" aria-label="Clear Chat">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+            <button id="chatbot-close" class="sanz-icon-btn" onclick="toggleSanza()" aria-label="Close Chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="sanza-messages" class="sanz-chat-body" role="log" aria-live="polite">
+        <!-- Messages injected here -->
+    </div>
+
+    <div id="sanza-chips" 
+      style="
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #fff;
+        border-top: 1px solid #f0ece6;
+        min-height: 44px;
+        align-items: center;
+      ">
+        <!-- Chips injected here -->
+    </div>
+
+    <div class="sanza-input-wrap">
+        <div id="sanza-cooldown" class="sanza-cooldown-timer" style="display:none;"></div>
+        <div class="sanz-input-area">
+            <div class="sanz-input-wrapper">
+                <input 
+                  type="text" 
+                  id="sanza-input"
+                  placeholder="Type your message..."
+                  aria-label="Message Input"
+                  autocomplete="off"
+                  spellcheck="false"
+                  style="
+                    pointer-events: all !important;
+                    user-select: text !important;
+                    -webkit-user-select: text !important;
+                    opacity: 1 !important;
+                    cursor: text !important;
+                  "
+                />
+            </div>
+            <button id="sanza-send" class="sanz-send-btn" aria-label="Send Message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+

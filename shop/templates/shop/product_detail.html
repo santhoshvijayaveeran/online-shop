@@ -2,17 +2,35 @@
 {% block title %}{{ product.name }} — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .section-padding { padding: 40px 0 100px; }
-    .bg-main { background: var(--sanzcart-bg); }
-    
     .breadcrumb-sc { font-size: 0.9rem; font-weight: 500; color: var(--sanzcart-muted); margin-bottom: 30px; display: flex; gap: 8px; align-items: center; }
     .breadcrumb-sc a { color: var(--sanzcart-muted); text-decoration: none; transition: 0.2s; }
     .breadcrumb-sc a:hover { color: var(--sanzcart-primary); }
     .breadcrumb-sc span.active { color: var(--sanzcart-text); font-weight: 600; }
     
+    .sticky-atc-bar {
+        position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid var(--sanzcart-border);
+        padding: 12px 0; z-index: 2000; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+    }
+    .sticky-atc-bar.active { transform: translateY(0); }
+    
+    .sentiment-badge {
+        display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 12px;
+        background: rgba(0,184,83,0.05); color: #00b853; font-weight: 700; font-size: 0.95rem; margin-bottom: 24px;
+    }
+    
+    .rec-card {
+        min-width: 220px; max-width: 220px; scroll-snap-align: start; background: var(--sanzcart-card);
+        border: 1.5px solid var(--sanzcart-border); border-radius: 12px; overflow: hidden; transition: 0.3s;
+    }
+    .rec-card:hover { border-color: var(--sanzcart-primary); transform: translateY(-5px); }
+    .rec-img { width: 100%; height: 160px; object-fit: cover; }
+    
+    .variant-stock-badge { font-size: 0.65rem; font-weight: 700; color: #ff9800; margin-left: 6px; }
+    
     .pd-image-card {
         background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 16px; padding: 20px;
-        position: sticky; top: 100px;
+        position: sticky; top: 100px; overflow: hidden;
     }
     
     .pd-category { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sanzcart-primary); font-weight: 700; display: block; margin-bottom: 8px; }
@@ -24,18 +42,6 @@
         font-family: var(--font-body); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; color: var(--sanzcart-text);
     }
     .pd-variant-btn:hover:not(:disabled) { border-color: var(--sanzcart-primary); }
-    
-    .btn-primary-sc {
-        background: var(--sanzcart-primary); color: #fff; padding: 16px 32px; border-radius: 12px; font-weight: 700; font-size: 1.05rem;
-        display: inline-flex; align-items: center; justify-content: center; gap: 12px; transition: 0.2s; border: none; cursor: pointer; width: 100%; text-decoration: none;
-    }
-    .btn-primary-sc:hover { background: #d32f2f; color: #fff; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(230,57,70,0.2); }
-    
-    .btn-outline-sc {
-        background: var(--sanzcart-card); color: var(--sanzcart-text); padding: 16px; border-radius: 12px; font-weight: 600; 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: 1.5px solid var(--sanzcart-border); width: 100%; text-decoration: none;
-    }
-    .btn-outline-sc:hover { border-color: var(--sanzcart-primary); color: var(--sanzcart-primary); }
 
     .feature-box { background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 12px; padding: 20px; text-align: center; }
     .feature-box-icon { font-size: 1.5rem; margin-bottom: 8px; }
@@ -43,12 +49,6 @@
 
     .review-card { padding: 24px 0; border-bottom: 1.5px solid var(--sanzcart-border); }
     .review-avatar { width: 44px; height: 44px; background: var(--sanzcart-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-family: var(--font-heading); }
-    
-    .form-control-sc {
-        width: 100%; padding: 14px 16px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); background: var(--sanzcart-bg);
-        color: var(--sanzcart-text); font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: 0.2s;
-    }
-    .form-control-sc:focus { border-color: var(--sanzcart-primary); background: var(--sanzcart-card); }
     
     .empty-state { text-align: center; padding: 60px 20px; background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 14px; }
 </style>
@@ -141,6 +141,9 @@
                             {% for variant in product.variants.all %}{% if variant.size %}
                             <button type="button" onclick="selectVariant({{ variant.id }},'{{ variant.size }}','{{ variant.color }}',{{ variant.get_final_price }})" data-variant="{{ variant.id }}" class="pd-variant-btn" {% if variant.stock == 0 %}disabled style="opacity:0.5; cursor:not-allowed; text-decoration:line-through;"{% endif %}>
                                 {{ variant.size }}{% if variant.price_extra > 0 %} +${{ variant.price_extra }}{% endif %}
+                                {% if variant.stock > 0 and variant.stock <= 5 %}
+                                <span class="variant-stock-badge">Only {{ variant.stock }}!</span>
+                                {% endif %}
                             </button>
                             {% endif %}{% endfor %}
                         </div>
@@ -212,24 +215,26 @@
                     </div>
                 </div>
 
-                <!-- Related -->
+                <!-- Related Products Optimized -->
                 {% if related_products %}
-                <div>
-                    <h6 style="font-family:var(--font-heading); font-weight:800; font-size:1.2rem; margin-bottom:20px; color:var(--sanzcart-text);">Similar Products</h6>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="margin-top:40px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h6 style="font-family:var(--font-heading); font-weight:800; font-size:1.2rem; color:var(--sanzcart-text); margin:0;">You may also like</h6>
+                        <span style="font-size:0.75rem; font-weight:700; color:var(--sanzcart-muted); text-transform:uppercase; letter-spacing:1px;">AI RECOMMENDED</span>
+                    </div>
+                    <div class="horizontal-scroll">
                         {% for rp in related_products %}
                         <a href="{% url 'product_detail' rp.id %}" style="text-decoration:none;">
-                            <div style="display:flex; align-items:center; gap:16px; padding:16px; background:var(--sanzcart-card); border:1.5px solid var(--sanzcart-border); border-radius:12px; transition:0.3s;" onmouseover="this.style.borderColor='var(--sanzcart-primary)'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--sanzcart-border)'; this.style.transform='translateX(0)';">
+                            <div class="rec-card">
                                 {% if rp.image %}
-                                <img src="{{ rp.image.url }}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
+                                <img src="{{ rp.image.url }}" class="rec-img">
                                 {% else %}
-                                <div style="width:60px; height:60px; background:var(--sanzcart-bg); border-radius:8px; display:flex; align-items:center; justify-content:center;">🛍</div>
+                                <div style="height:160px; background:var(--sanzcart-bg); display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍</div>
                                 {% endif %}
-                                <div style="flex:1;">
-                                    <div style="font-family:var(--font-heading); font-weight:700; font-size:1rem; color:var(--sanzcart-text); margin-bottom:4px;">{{ rp.name }}</div>
-                                    <div style="font-weight:800; font-size:1.1rem; color:var(--sanzcart-primary);">${{ rp.price }}</div>
+                                <div style="padding:15px;">
+                                    <div style="font-family:var(--font-heading); font-weight:700; font-size:0.9rem; color:var(--sanzcart-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ rp.name }}</div>
+                                    <div style="font-weight:800; font-size:1rem; color:var(--sanzcart-primary); margin-top:5px;">${{ rp.price }}</div>
                                 </div>
-                                <i class="fas fa-chevron-right" style="color:var(--sanzcart-border);"></i>
                             </div>
                         </a>
                         {% endfor %}
@@ -241,7 +246,14 @@
 
         <!-- REVIEWS -->
         <div style="margin-top:80px;">
-            <h3 style="font-family:var(--font-heading); font-weight:800; font-size:2rem; margin-bottom:40px;">Customer Reviews</h3>
+            <h3 style="font-family:var(--font-heading); font-weight:800; font-size:2rem; margin-bottom:20px;">Customer Reviews</h3>
+            
+            <!-- AI Sentiment Summary -->
+            <div class="sentiment-badge">
+                <i class="fas fa-robot"></i>
+                <span>Sanza AI Sentiment: <strong style="color:var(--sanzcart-text);">Positive {{ sentiment_score }}%</strong></span>
+                <span style="font-weight:500; font-size:0.8rem; color:var(--sanzcart-muted); margin-left:10px;">(Based on {{ reviews.count|default:"all" }} verified reviews)</span>
+            </div>
             
             {% if request.user.is_authenticated and user_purchased and not user_reviewed %}
             <div style="background:var(--sanzcart-card); border:1.5px solid var(--sanzcart-border); border-radius:16px; padding:32px; margin-bottom:40px;">
@@ -444,11 +456,42 @@ function selectVariant(id, size, color, price) {
     document.getElementById('variantPrice').textContent = '$' + price;
 }
 
-function addToCartWithVariant(e, pid) {
+    function addToCartWithVariant(e, pid) {
     e.preventDefault();
     let u = `/add-to-cart/${pid}/`;
     if(selectedVariantId) u += `?variant_id=${selectedVariantId}`;
     window.location.href = u;
 }
+
+// Sticky ATC Bar
+window.onscroll = function() {
+    const bar = document.getElementById('stickyAtcBar');
+    if(window.scrollY > 800) bar.classList.add('active');
+    else bar.classList.remove('active');
+};
 </script>
+{% endblock %}
+
+{% block extra_body %}
+<!-- Sticky ATC Bar -->
+<div class="sticky-atc-bar" id="stickyAtcBar">
+    <div class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:16px;">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" style="width:44px; height:44px; object-fit:cover; border-radius:6px;">
+                {% endif %}
+                <div>
+                    <div style="font-family:var(--font-heading); font-weight:800; font-size:1rem; color:var(--sanzcart-text);">{{ product.name }}</div>
+                    <div style="font-weight:800; color:var(--sanzcart-primary);">$<span id="stickyPrice">{{ product.price }}</span></div>
+                </div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <a href="#" onclick="addToCartWithVariant(event,{{ product.id }})" class="btn-primary-sc" style="padding:10px 24px; font-size:0.9rem; width:auto;">
+                    Add to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

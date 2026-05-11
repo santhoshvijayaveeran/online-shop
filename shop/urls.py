@@ -1,4 +1,5 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
@@ -13,7 +14,6 @@ urlpatterns = [
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     path('product/<int:product_id>/review/', views.add_review, name='add_review'),
     path('review/delete/<int:review_id>/', views.delete_review, name='delete_review'),
-    path('dashboard/', views.admin_dashboard, name='admin_dashboard'), 
     path('cart/update/<int:item_id>/', views.update_cart, name='update_cart'),
     path('cart/remove/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
     path('register/', views.register_view, name='register'),
@@ -31,35 +31,51 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/change-password/', views.change_password, name='change_password'),
     path('order/track/<int:order_id>/', views.order_tracking, name='order_tracking'),
+    
+    # Store/Order Helpers
+    path('order/<int:order_id>/invoice/', views.download_invoice, name='download_invoice'),
     path('order/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
-    path('admin/order/<int:order_id>/update/', views.update_order_status, name='update_order_status'),
     path('apply-coupon/', views.apply_coupon, name='apply_coupon'),
     path('remove-coupon/', views.remove_coupon, name='remove_coupon'),
-    path('dashboard/products/', views.manage_products, name='manage_products'),
-    path('dashboard/products/add/', views.add_product, name='add_product'),
-    path('dashboard/products/edit/<int:product_id>/', views.edit_product, name='edit_product'),
-    path('dashboard/products/delete/<int:product_id>/', views.delete_product, name='delete_product'),
-    path('dashboard/category/add/', views.add_category, name='add_category'),
-    path('dashboard/order/<int:order_id>/update/', views.update_order_status, name='update_order_status'),
-    path('dashboard/orders/', views.manage_orders, name='manage_orders'),
-    path('dashboard/orders/<int:order_id>/', views.admin_order_detail, name='admin_order_detail'),
-    path('dashboard/returns/<int:return_id>/handle/', views.handle_return, name='handle_return'),
-    path('dashboard/returns/', views.manage_returns, name='manage_returns'),
-    path('dashboard/sales/', views.sales_report, name='sales_report'),
+    
+    # Notifications
+    path('notifications/', views.notifications_view, name='notifications_view'),
+    path('notifications/read-all/', views.mark_all_read, name='mark_all_read'),
+    path('notifications/read/<int:notif_id>/', views.mark_as_read, name='mark_as_read'),
+    
     path('notify/<int:product_id>/', views.notify_me, name='notify_me'),
     path('product/<int:product_id>/question/', views.ask_question, name='ask_question'),
     path('question/<int:question_id>/answer/', views.answer_question, name='answer_question'),
     path('question/<int:question_id>/delete/', views.delete_question, name='delete_question'),
     path('newsletter/subscribe/', views.newsletter_subscribe, name='newsletter_subscribe'),
     path('newsletter/unsubscribe/<str:email>/', views.newsletter_unsubscribe, name='newsletter_unsubscribe'),
-    path('dashboard/newsletter/', views.manage_newsletter, name='manage_newsletter'),
     path('login/', views.user_login, name='login'),
     path('verify-2fa/', views.verify_2fa, name='verify_2fa'),
     path('resend-otp/', views.resend_otp, name='resend_otp'),
     path('push/subscribe/', views.save_push_subscription, name='save_push_subscription'),
-    path('dashboard/broadcast/', views.admin_broadcast, name='admin_broadcast'),
     path('order/<int:order_id>/status/', views.order_status_api, name='order_status_api'),
     path('about/', views.about, name='about'),
     path('contact/', views.contact_us, name='contact_us'),
     path('info/<slug:slug>/', views.info_page, name='info_page'),
+    path('chatbot/query/', views.chatbot_query, name='chatbot_query'),
+    path('chatbot/clear/', views.clear_chatbot_history, name='clear_chatbot_history'),
+    path('chatbot/ticket/', views.create_support_ticket, name='create_support_ticket'),
+    path('password-reset/', auth_views.PasswordResetView.as_view(template_name='shop/password_reset.html'), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='shop/password_reset_done.html'), name='password_reset_done'),
+    path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='shop/password_reset_confirm.html'), name='password_reset_confirm'),
+    path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(template_name='shop/password_reset_complete.html'), name='password_reset_complete'),
+
+    # OTP Login
+    path('send-otp/', views.send_otp, name='send_otp'),
+    path('otp-login/', views.otp_login, name='otp_login'),
+
+    # AI Chatbot Enhanced APIs
+    path('api/orders/<int:order_id>/status/', views.order_status_api, name='order_status_api_v2'),
+    path('api/orders/my-orders/', views.my_orders_api, name='my_orders_api'),
+    path('api/orders/verify/', views.verify_order_api, name='verify_order_api'),
+    path('api/products/search/', views.product_search_api, name='product_search_api'),
+    path('api/offers/active/', views.active_offers_api, name='active_offers_api'),
+    path('api/returns/<int:order_id>/', views.return_status_api, name='return_status_api'),
+    path('api/returns/create/', views.create_return_api, name='create_return_api'),
+    path('api/chat/log/', views.log_chat_api, name='log_chat_api'),
 ]

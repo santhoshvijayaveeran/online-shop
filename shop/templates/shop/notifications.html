@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Notifications — SANZCART{% endblock %}
+{% block content %}
+<style>
+    .notif-container { padding: 60px 0; background: var(--sanzcart-bg); min-height: 90vh; }
+    .notif-card { 
+        background: var(--sanzcart-card); border: 1.5px solid var(--sanzcart-border); border-radius: 20px; 
+        margin-bottom: 16px; transition: 0.3s; overflow: hidden;
+    }
+    .notif-card:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+    .notif-card.unread { border-left: 4px solid var(--sanzcart-primary); background: rgba(230,57,70,0.01); }
+    
+    .notif-link { display: flex; align-items: center; gap: 20px; padding: 24px; text-decoration: none; color: inherit; }
+    .notif-icon { 
+        width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; 
+        justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+    }
+</style>
+
+<div class="notif-container">
+    <div class="container" style="max-width: 800px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <h2 style="font-family:var(--font-heading); font-size:2rem; font-weight:900; margin:0; letter-spacing:-1px;">Notifications</h2>
+            {% if unread_notifications_count > 0 %}
+            <a href="{% url 'mark_all_read' %}" class="btn-outline-sc" style="padding:10px 20px; font-size:0.85rem; text-decoration:none;">Mark all as read</a>
+            {% endif %}
+        </div>
+
+        {% if all_notifications %}
+            {% for notif in all_notifications %}
+            <div class="notif-card {% if not notif.is_read %}unread{% endif %}">
+                <a href="{% url 'mark_as_read' notif.id %}" class="notif-link">
+                    <div class="notif-icon" style="background:{% if notif.notification_type == 'order' %}rgba(0,184,83,0.1){% else %}rgba(33,150,243,0.1){% endif %}; color:{% if notif.notification_type == 'order' %}#00b853{% else %}#2196f3{% endif %};">
+                        <i class="{% if notif.notification_type == 'order' %}fas fa-box{% elif notif.notification_type == 'price_drop' %}fas fa-tag{% else %}fas fa-info{% endif %}"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:800; font-size:1.05rem; margin-bottom:4px; color:var(--sanzcart-text);">{{ notif.title }}</div>
+                        <div style="font-size:0.9rem; color:var(--sanzcart-muted); font-weight:600; line-height:1.5;">{{ notif.message }}</div>
+                        <div style="font-size:0.75rem; color:#aaa; margin-top:8px; font-weight:700;">{{ notif.created_at|date:"d M Y, H:i" }} · {{ notif.created_at|timesince }} ago</div>
+                    </div>
+                    {% if not notif.is_read %}
+                    <div style="width:10px; height:10px; background:var(--sanzcart-primary); border-radius:50%;"></div>
+                    {% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align:center; padding:100px 20px;">
+                <div style="font-size:4rem; color:var(--sanzcart-border); margin-bottom:24px;"><i class="far fa-bell-slash"></i></div>
+                <h3 style="font-family:var(--font-heading); font-weight:800; margin-bottom:12px;">No notifications yet</h3>
+                <p style="color:var(--sanzcart-muted); font-size:1rem; margin-bottom:32px;">We'll notify you when something important happens.</p>
+                <a href="{% url 'search' %}" class="btn-primary-sc" style="padding:14px 40px;">Explore Store</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

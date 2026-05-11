@@ -2,39 +2,169 @@
 {% block title %}Login — SANZCART{% endblock %}
 {% block content %}
 <style>
-    .form-control-sc { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1.5px solid var(--sanzcart-border); background: var(--sanzcart-bg); color: var(--sanzcart-text); font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: 0.2s; }
-    .form-control-sc:focus { border-color: var(--sanzcart-primary); background: var(--sanzcart-card); }
-    .btn-primary-sc { background: var(--sanzcart-primary); color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; border: none; cursor: pointer; text-decoration: none; }
-    .btn-primary-sc:hover { background: #d32f2f; transform: translateY(-2px); color: #fff; }
+    .login-container {
+        min-height: 90vh; display: flex; align-items: center; justify-content: center; 
+        padding: 60px 16px; background: var(--sanzcart-bg);
+    }
+    .login-box {
+        width: 100%; max-width: 440px; background: var(--sanzcart-card); 
+        border: 1.5px solid var(--sanzcart-border); border-radius: 20px; padding: 40px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    }
+    .login-header { text-align: center; margin-bottom: 32px; }
+    .login-header h2 { 
+        font-family: var(--font-heading); font-size: 2.2rem; font-weight: 900; 
+        letter-spacing: -1.5px; margin-bottom: 8px; color: var(--sanzcart-text);
+    }
+    .login-header p { color: var(--sanzcart-muted); font-size: 0.95rem; font-weight: 500; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-weight: 800; font-size: 0.75rem; color: var(--sanzcart-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .divider { display: flex; align-items: center; gap: 16px; margin: 30px 0; }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--sanzcart-border); }
+    .divider span { font-size: 0.75rem; font-weight: 800; color: var(--sanzcart-muted); text-transform: uppercase; }
+
+    .social-btn {
+        width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid var(--sanzcart-border); 
+        background: #fff; color: var(--sanzcart-text); font-weight: 700; font-size: 0.9rem; 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .social-btn:hover { background: var(--sanzcart-bg); border-color: var(--sanzcart-text); }
+
+    .toggle-login {
+        display: flex; background: var(--sanzcart-bg); border-radius: 10px; padding: 4px; margin-bottom: 30px;
+    }
+    .toggle-btn {
+        flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; 
+        cursor: pointer; transition: 0.2s; background: transparent; color: var(--sanzcart-muted);
+    }
+    .toggle-btn.active { background: #fff; color: var(--sanzcart-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+    #otpForm { display: none; }
 </style>
-<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;background:var(--sanzcart-bg);">
-    <div style="width:100%;max-width:420px;">
-        <div style="background:var(--sanzcart-card);border:1.5px solid var(--sanzcart-border);border-radius:14px;padding:40px;box-shadow:0 5px 15px rgba(0,0,0,.02);">
-            <div style="text-align:center;margin-bottom:28px;">
-                <div style="font-family:var(--font-heading);font-size:2.2rem;font-weight:900;margin-bottom:4px;letter-spacing:-1px;color:var(--sanzcart-text);"><span style="color:var(--sanzcart-primary)">SANZ</span>CART</div>
-                <p style="color:var(--sanzcart-muted);font-size:.95rem;font-weight:500;">Welcome back! Login to continue</p>
-            </div>
 
-            <form method="POST" action="{% url 'login' %}">
-                {% csrf_token %}
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Username</label>
-                    <input type="text" name="username" required class="form-control-sc" placeholder="Enter username" autofocus>
-                </div>
-                <div style="margin-bottom:24px;">
-                    <label style="display:block;font-weight:700;font-size:.85rem;color:var(--sanzcart-muted);margin-bottom:8px;">Password</label>
-                    <input type="password" name="password" required class="form-control-sc" placeholder="Enter password">
-                </div>
-                <button type="submit" class="btn-primary-sc" style="width:100%;justify-content:center;padding:14px;font-size:1rem;" {% if locked %}disabled{% endif %}>
-                    Login <i class="fas fa-arrow-right ms-2"></i>
-                </button>
-            </form>
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Login to your SanzCart account</p>
+        </div>
 
-            <div style="text-align:center;margin-top:24px;font-size:.95rem;color:var(--sanzcart-muted);font-weight:500;">
-                Don't have an account?
-                <a href="{% url 'register' %}" style="color:var(--sanzcart-primary);font-weight:700;text-decoration:none;">Sign Up</a>
+        <div class="toggle-login">
+            <button type="button" class="toggle-btn active" id="pwdToggle" onclick="showForm('password')">Password</button>
+            <button type="button" class="toggle-btn" id="otpToggle" onclick="showForm('otp')">OTP Login</button>
+        </div>
+
+        <!-- Password Login Form -->
+        <form id="pwdForm" method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Email or Username</label>
+                <input type="text" name="username" class="form-control-sc" placeholder="john@example.com" required>
             </div>
+            <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label class="form-label" style="margin:0;">Password</label>
+                    <a href="{% url 'password_reset' %}" style="font-size:0.75rem; font-weight:700; color:var(--sanzcart-primary); text-decoration:none;">Forgot?</a>
+                </div>
+                <input type="password" name="password" class="form-control-sc" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-primary-sc">
+                Login <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <!-- OTP Login Form -->
+        <form id="otpForm" method="POST" action="{% url 'otp_login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="email" name="email" id="otpEmail" class="form-control-sc" placeholder="john@example.com" required>
+                    <button type="button" id="sendOtpBtn" onclick="requestOTP()" class="btn-outline-sc" style="width:auto; padding:0 20px; font-size:0.8rem; border-radius:10px;">Send</button>
+                </div>
+            </div>
+            <div class="form-group" id="otpInputGroup" style="display:none;">
+                <label class="form-label">Enter 6-Digit OTP</label>
+                <input type="text" name="otp" class="form-control-sc" placeholder="000000" maxlength="6">
+            </div>
+            <button type="submit" class="btn-primary-sc" id="otpSubmitBtn" disabled>
+                Verify & Login
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>OR CONTINUE WITH</span>
+        </div>
+
+        <!-- Google login temporarily disabled -->
+        <!--
+        <a href="{% url 'social:begin' 'google-oauth2' %}" style="text-decoration:none;">
+            <button type="button" class="social-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18"> Google
+            </button>
+        </a>
+        -->
+
+        <div style="text-align:center; margin-top:32px; font-size:0.95rem; color:var(--sanzcart-muted); font-weight:500;">
+            New here? <a href="{% url 'register' %}" style="color:var(--sanzcart-primary); font-weight:800; text-decoration:none;">Create account</a>
         </div>
     </div>
 </div>
+
+<script>
+function showForm(type) {
+    const pwdForm = document.getElementById('pwdForm');
+    const otpForm = document.getElementById('otpForm');
+    const pwdToggle = document.getElementById('pwdToggle');
+    const otpToggle = document.getElementById('otpToggle');
+
+    if (type === 'password') {
+        pwdForm.style.display = 'block';
+        otpForm.style.display = 'none';
+        pwdToggle.classList.add('active');
+        otpToggle.classList.remove('active');
+    } else {
+        pwdForm.style.display = 'none';
+        otpForm.style.display = 'block';
+        pwdToggle.classList.remove('active');
+        otpToggle.classList.add('active');
+    }
+}
+
+async function requestOTP() {
+    const email = document.getElementById('otpEmail').value;
+    const btn = document.getElementById('sendOtpBtn');
+    if (!email) return alert("Please enter email");
+    
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    try {
+        const response = await fetch('{% url "send_otp" %}', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            alert("OTP sent to " + email);
+            document.getElementById('otpInputGroup').style.display = 'block';
+            document.getElementById('otpSubmitBtn').disabled = false;
+            btn.textContent = "Resend";
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert("Error sending OTP. Please try again.");
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
 {% endblock %}

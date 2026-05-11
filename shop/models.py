@@ -38,7 +38,7 @@ class Product(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('product_detail', kwargs={'slug': self.slug})
+        return reverse('product_detail', kwargs={'product_id': self.id})
 
     def __str__(self):
         return self.name
@@ -402,3 +402,104 @@ class PushSubscription(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Push"
+
+
+class SupportTicket(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    category = models.CharField(max_length=50, default='General')
+    message = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Ticket #{self.id} - {self.subject}"
+
+class FAQ(models.Model):
+    question = models.CharField(max_length=255)
+    answer = models.TextField()
+    category = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.question
+
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=100, unique=True)
+    language = models.CharField(max_length=10, default='en')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+
+class ChatMessage(models.Model):
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    sender = models.CharField(max_length=10, choices=[('user', 'User'), ('bot', 'Bot')])
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+
+class ChatLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_id = models.UUIDField(editable=False)
+    messages = models.JSONField(default=list)
+    intent_detected = models.CharField(max_length=100, blank=True)
+    satisfaction_score = models.IntegerField(default=0)  # Ratio of thumbs up/down
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved = models.BooleanField(default=False)
+    escalated = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Chat {self.session_id} - {self.user.username if self.user else 'Guest'}"
+
+class ReturnPolicy(models.Model):
+    content = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Return Policy"
+
+class ShippingPolicy(models.Model):
+    content = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Shipping Policy"
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('order', 'Order Update'),
+        ('price_drop', 'Price Drop'),
+        ('restock', 'Restock'),
+        ('promotion', 'Promotion'),
+        ('system', 'System Message'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='system')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    link = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
