@@ -3,7 +3,7 @@ services:
     name: online-shop
     env: python
     buildCommand: ./build.sh
-    startCommand: gunicorn online_shop.wsgi
+    startCommand: gunicorn online_shop.wsgi --bind 0.0.0.0:10000
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
