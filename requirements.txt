@@ -41,10 +41,16 @@ pywebpush==1.14.0
 fpdf2==2.8.7
 
 # Sanza Chatbot
-google-generativeai
+google-generativeai==0.8.4
 sentence-transformers
 faiss-cpu
-channels
-channels-redis
-django-cors-headers
+channels==4.2.0
+channels-redis==4.2.1
+django-cors-headers==4.7.0
 tiktoken
+numpy
+torch
+transformers
+
+# Social Auth
+social-auth-app-django==5.5.0

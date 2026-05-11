@@ -1,1 +1,1 @@
-web: gunicorn online_shop.wsgi
+web: gunicorn antigravity.wsgi

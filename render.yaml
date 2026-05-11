@@ -3,10 +3,10 @@ services:
     name: online-shop
     env: python
     buildCommand: ./build.sh
-    startCommand: gunicorn online_shop.wsgi
+    startCommand: gunicorn antigravity.wsgi
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.7
+        value: 3.11.9
       - key: DEBUG
         value: "False"
       - key: DATABASE_URL

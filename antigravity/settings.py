@@ -21,7 +21,9 @@ load_dotenv(BASE_DIR / '.env')
 # --------------------------------------------------
 # Security Settings
 # --------------------------------------------------
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-for-dev-only')
+if not os.getenv('SECRET_KEY') and not DEBUG:
+    raise ValueError("SECRET_KEY environment variable is not set for production!")
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
@@ -29,6 +31,10 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost 127.0.0.1 online-shop-w8q3
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# HTTPS Settings for Production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
 
 # --------------------------------------------------
 # Application Definition
