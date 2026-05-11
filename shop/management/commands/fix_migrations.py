@@ -20,7 +20,7 @@ class Command(BaseCommand):
                     ('0006_partial'),
                     ('0007_code_timestamp'),
                     ('0008_partial_timestamp'),
-                    ('0009_auto_20191128_0112'),
+                    ('0009_auto_20191118_0520'),
                     ('0010_uid_db_index'),
                     ('0011_alter_id_fields'),
                     ('0012_usersocialauth_extra_data_new'),
