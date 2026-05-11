@@ -20,8 +20,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'Note: Could not delete social_django records (table might not exist yet): {e}'))
 
         try:
-            self.stdout.write('Running: python manage.py migrate social_django')
-            call_command('migrate', 'social_django')
-            self.stdout.write(self.style.SUCCESS('social_django migration successful'))
+            self.stdout.write('Running: python manage.py migrate social_django --fake-initial')
+            call_command('migrate', 'social_django', fake_initial=True)
+            self.stdout.write(self.style.SUCCESS('social_django migration successful (fake-initial used)'))
         except Exception as e:
              self.stdout.write(self.style.ERROR(f'social_django specific migration failed: {e}'))
