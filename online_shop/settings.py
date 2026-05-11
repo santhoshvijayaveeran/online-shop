@@ -71,7 +71,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'antigravity.urls'
+ROOT_URLCONF = 'online_shop.urls'
 
 TEMPLATES = [
     {
@@ -93,8 +93,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'antigravity.wsgi.application'
-ASGI_APPLICATION = 'antigravity.asgi.application'
+WSGI_APPLICATION = 'online_shop.wsgi.application'
+ASGI_APPLICATION = 'online_shop.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
