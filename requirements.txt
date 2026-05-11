@@ -53,4 +53,5 @@ torch
 transformers
 
 # Social Auth
-social-auth-app-django==5.5.0
+social-auth-app-django==5.4.2
+social-auth-core==4.5.4
