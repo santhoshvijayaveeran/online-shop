@@ -979,6 +979,7 @@ def user_login(request):
 
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
         ip = get_client_ip(request)
 
@@ -994,7 +995,7 @@ def user_login(request):
             )
             return render(request, 'shop/login.html', {'locked': True})
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=username, email=email, password=password)
 
         if user is not None:
             # Admin-க்கு 2FA

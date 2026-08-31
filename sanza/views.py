@@ -42,7 +42,7 @@ def _call_groq(messages, language='en'):
     resp = http_requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         json={
-            "model": "llama-3.1-8b-instant",
+            "model": "openai/gpt-oss-20b",
             "messages": full_messages,
             "temperature": 0.7,
             "max_tokens": 512,
