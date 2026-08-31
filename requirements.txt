@@ -42,15 +42,12 @@ fpdf2==2.8.7
 
 # Sanza Chatbot
 google-generativeai==0.8.4
-sentence-transformers
 faiss-cpu
+tiktoken
+numpy
 channels==4.2.0
 channels-redis==4.2.1
 django-cors-headers==4.7.0
-tiktoken
-numpy
-torch
-transformers
 
 # Social Auth
 social-auth-app-django==5.4.2

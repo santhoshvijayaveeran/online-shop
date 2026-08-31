@@ -22,10 +22,10 @@ load_dotenv(BASE_DIR / '.env')
 # Security Settings
 # --------------------------------------------------
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-for-dev-only')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
 if not os.getenv('SECRET_KEY') and not DEBUG:
     raise ValueError("SECRET_KEY environment variable is not set for production!")
-
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost 127.0.0.1 online-shop-w8q3.onrender.com *').split()
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -224,7 +224,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD =os.getenv('EMAIL_HOST_PASSWORD') 
 DEFAULT_FROM_EMAIL = 'santhoshkumarv09042005@gmail.com' # Payment 
 RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID') 
-RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET') # உன் secret போடு # Shipping 
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET') 
 FREE_SHIPPING_THRESHOLD = 500 # ₹500 above = free shipping 
 SHIPPING_CHARGE = 49 # below ₹500 = ₹49 # Returns
 RETURN_WINDOW_DAYS = 7 # 7 days return window # Twilio Settings 

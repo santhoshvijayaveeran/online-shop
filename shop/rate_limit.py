@@ -19,7 +19,7 @@ def get_client_ip(request):
 def is_rate_limited(key, max_attempts=5, window=300):
     """
     key: unique string (ip + action)
-    max_attempts: இந்த window-ல் எத்தனை attempts allow
+    max_attempts:
     window: seconds (300 = 5 minutes)
     """
     now = time.time()
@@ -36,7 +36,7 @@ def is_rate_limited(key, max_attempts=5, window=300):
 
 
 def get_remaining_time(key, window=300):
-    """Lockout-ல் எத்தனை seconds மீதம் இருக்குன்னு return பண்ணும்"""
+   
     now = time.time()
     attempts = _rate_store.get(key, [])
     if not attempts:

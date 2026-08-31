@@ -88,7 +88,7 @@ class ProductVariantInline(admin.TabularInline):
     extra = 1
     fields = ['size', 'color', 'stock', 'price_extra']
 
-# Existing ProductAdmin-ல் add பண்ணு:
+# Existing ProductAdmin
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductVariantInline]
     # ... மற்ற existing fields ...
@@ -99,7 +99,6 @@ class BulkDiscountInline(admin.TabularInline):
     model = BulkDiscount
     extra = 1
 
-# ProductAdmin-ல் add பண்ணு:
+# ProductAdmin
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductVariantInline, BulkDiscountInline]
-    # ... மற்ற fields ...
